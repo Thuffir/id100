@@ -31,10 +31,24 @@
  *
  **********************************************************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include "comm.h"
 
 int main(void)
 {
+  uint8_t buff[300];
+  uint16_t length, i;
 
-  return 0;
+  CommOpen("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
+  CommSendBuffer("f", 1);
+  length = CommReceiveBuffer(buff);
+  CommClose();
+
+  printf("Buff[%u]: ", length);
+  for(i = 0; i < length; i++) {
+    printf("%02X ", buff[i]);
+  }
+  printf("\n");
+
+  return EXIT_SUCCESS;
 }

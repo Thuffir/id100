@@ -40,8 +40,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "crc16.h"
+#include "comm.h"
 
-static const speed_t portSpeed = B38400;
+#define dprintf(...) printf(__VA_ARGS__); fflush(stdout)
+//#define dprintf(fmt,...)
+
 static const uint8_t STX = 0x02;
 static const uint8_t ENQ = 0x10;
 
@@ -52,6 +55,7 @@ static int port = -1;
  **********************************************************************************************************************/
 void CommOpen(char *devName)
 {
+  static const speed_t portSpeed = B38400;
   struct termios tty;
 
   port = open(devName, O_RDWR | O_NOCTTY | O_SYNC);
@@ -81,7 +85,7 @@ void CommOpen(char *devName)
   tty.c_oflag &= ~OPOST;
 
   tty.c_cc[VMIN] = 0;
-  tty.c_cc[VTIME] = 5;
+  tty.c_cc[VTIME] = 10;
 
   if (tcsetattr(port, TCSANOW, &tty) != 0) {
     perror("tcsetattr()");
@@ -92,14 +96,25 @@ void CommOpen(char *devName)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-static Crc16Type CommWriteByte(uint8_t byte, Crc16Type crc)
+void CommClose(void)
+{
+  if(close(port) != 0) {
+    perror("close()");
+    exit(EXIT_FAILURE);
+  }
+}
+
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+static Crc16Type CommSendByte(uint8_t byte, Crc16Type crc)
 {
   if(write(port, &byte, 1) != 1) {
     perror("write()");
     exit(EXIT_FAILURE);
   }
 
-  printf("%02X ", byte);
+  dprintf("%02X ", byte);
 
   return(Crc16UpdateByte(crc, byte));
 }
@@ -110,11 +125,11 @@ static Crc16Type CommWriteByte(uint8_t byte, Crc16Type crc)
 static Crc16Type CommEncodeByte(uint8_t byte, Crc16Type crc)
 {
   if((byte == STX) || (byte == ENQ)) {
-    crc = CommWriteByte(ENQ, crc);
+    crc = CommSendByte(ENQ, crc);
     byte += 0x80;
   }
 
-  crc = CommWriteByte(byte, crc);
+  crc = CommSendByte(byte, crc);
 
   return crc;
 }
@@ -122,23 +137,102 @@ static Crc16Type CommEncodeByte(uint8_t byte, Crc16Type crc)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-void CommSendMessage(uint8_t command, uint8_t *param, uint16_t paramLength)
+void CommSendBuffer(const void *buffer, const uint16_t length)
 {
   Crc16Type crc = 0xFFFF;
-  uint16_t i, length = sizeof(command) + paramLength;
+  uint16_t i;
 
-  // STX (Not encoded)
-  crc = CommWriteByte(STX, crc);
-  // Length of command + parameter
+  dprintf("TX: ");
+  // Send STX (Not encoded)
+  crc = CommSendByte(STX, crc);
+  // Send length
   crc = CommEncodeByte(length >> 8, crc);
   crc = CommEncodeByte(length, crc);
-  // Command
-  crc = CommEncodeByte(command, crc);
-  // Parameter
-  for(i = 0; i < paramLength; i++) {
-    crc = CommEncodeByte(param[i], crc);
+  // Send Buffer as bytes
+  for(i = 0; i < length; i++) {
+    crc = CommEncodeByte(((uint8_t *)buffer)[i], crc);
   }
-  // CRC
+  // Send CRC
   CommEncodeByte(crc >> 8, 0);
   CommEncodeByte(crc, 0);
+  dprintf("\n");
+}
+
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+static Crc16Type CommReceiveByte(uint8_t *byte, Crc16Type crc)
+{
+  if(read(port, byte, 1) != 1) {
+    perror("read()");
+    exit(EXIT_FAILURE);
+  }
+
+  dprintf("%02X ", *byte);
+
+  return(Crc16UpdateByte(crc, *byte));
+}
+
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+static Crc16Type CommDecodeByte(uint8_t *byte, Crc16Type crc)
+{
+  crc = CommReceiveByte(byte, crc);
+
+  if(*byte == ENQ) {
+    crc = CommReceiveByte(byte, crc);
+    *byte -= 0x80;
+  }
+
+  return crc;
+}
+
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+uint16_t CommReceiveBuffer(void *buffer)
+{
+  Crc16Type crc = 0xFFFF, crcIn;
+  uint8_t byte;
+  uint16_t i, length;
+
+  dprintf("RX: ");
+
+  // Receive STX (Not encoded)
+  crc = CommReceiveByte(&byte, crc);
+  if(byte != STX) {
+    perror("STX");
+    exit(EXIT_FAILURE);
+  }
+
+  // Receive length
+  crc = CommDecodeByte(&byte, crc);
+  length = (uint16_t)byte << 8;
+  crc = CommDecodeByte(&byte, crc);
+  length |= (uint16_t)byte;
+  if(length > COMM_MAX_PARAM_LENGTH) {
+    perror("Parameter too big");
+    exit(EXIT_FAILURE);
+  }
+
+  // Receive Buffer as bytes
+  for(i = 0; i < length; i++) {
+    crc = CommDecodeByte(&(((uint8_t *)buffer)[i]), crc);
+  }
+
+  // Receive CRC
+  CommDecodeByte(&byte, 0);
+  crcIn = (Crc16Type)byte << 8;
+  CommDecodeByte(&byte, 0);
+  crcIn |= (Crc16Type)byte;
+  dprintf("\n");
+
+  // Check CRC
+  if(crc != crcIn) {
+    perror("CRC Error");
+    exit(EXIT_FAILURE);
+  }
+
+  return length;
 }

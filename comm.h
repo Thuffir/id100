@@ -32,5 +32,9 @@
  **********************************************************************************************************************/
 #include <stdint.h>
 
+#define COMM_MAX_PARAM_LENGTH 259
+
 void CommOpen(char *devName);
-void CommSendMessage(uint8_t command, uint8_t *param, uint16_t paramLength);
+void CommClose(void);
+void CommSendBuffer(const void *buffer, const uint16_t length);
+uint16_t CommReceiveBuffer(void *buffer);
