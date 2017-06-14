@@ -30,72 +30,115 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "crc16.h"
 
+static const speed_t portSpeed = B38400;
 static const uint8_t STX = 0x02;
 static const uint8_t ENQ = 0x10;
 
-static Crc16Type crc = 0xFFFF;
+static int port = -1;
 
-void OutputByte(uint8_t byte)
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+void CommOpen(char *devName)
 {
-  static bool escape = false;
+  struct termios tty;
 
-  if(escape == true) {
-    if((byte == STX) || (byte == ENQ)) {
-      putchar(ENQ);
-      crc = Crc16UpdateByte(crc, ENQ);
-      byte += 0x80;
-    }
-  }
-  else {
-    escape = true;
+  port = open(devName, O_RDWR | O_NOCTTY | O_SYNC);
+  if(port < 0) {
+    perror("open()");
+    exit(EXIT_FAILURE);
   }
 
-  putchar(byte);
-  crc = Crc16UpdateByte(crc, byte);
+  if (tcgetattr(port, &tty) < 0) {
+    perror("tcgetattr()");
+    exit(EXIT_FAILURE);
+  }
+
+  cfsetospeed(&tty, portSpeed);
+  cfsetispeed(&tty, portSpeed);
+
+  tty.c_cflag |= (CLOCAL | CREAD);    /* ignore modem controls */
+  tty.c_cflag &= ~CSIZE;
+  tty.c_cflag |= CS8;         /* 8-bit characters */
+  tty.c_cflag &= ~PARENB;     /* no parity bit */
+  tty.c_cflag &= ~CSTOPB;     /* only need 1 stop bit */
+  tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
+
+  /* setup for non-canonical mode */
+  tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+  tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+  tty.c_oflag &= ~OPOST;
+
+  tty.c_cc[VMIN] = 0;
+  tty.c_cc[VTIME] = 5;
+
+  if (tcsetattr(port, TCSANOW, &tty) != 0) {
+    perror("tcsetattr()");
+    exit(EXIT_FAILURE);
+  }
 }
 
-/*
-int main(void)
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+static Crc16Type CommWriteByte(uint8_t byte, Crc16Type crc)
 {
-  uint8_t bitmap[26], i;
-  Crc16Type finalCrc;
-
-  for(i = 0; i < sizeof(bitmap); i++) {
-    bitmap[i] = 0xAA;
+  if(write(port, &byte, 1) != 1) {
+    perror("write()");
+    exit(EXIT_FAILURE);
   }
 
-  OutputByte(STX);
-  OutputByte(0);
-  OutputByte(27);
-  OutputByte(0x44);
-  for(i = 0; i < sizeof(bitmap); i++) {
-    OutputByte(bitmap[i]);
-  }
-  finalCrc = crc;
-  OutputByte((finalCrc >> 8) & 0xFF);
-  OutputByte(finalCrc & 0xFF);
+  printf("%02X ", byte);
 
-  return 0;
+  return(Crc16UpdateByte(crc, byte));
 }
 
-int main(void)
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+static Crc16Type CommEncodeByte(uint8_t byte, Crc16Type crc)
 {
-  Crc16Type finalCrc;
+  if((byte == STX) || (byte == ENQ)) {
+    crc = CommWriteByte(ENQ, crc);
+    byte += 0x80;
+  }
 
-  OutputByte(STX);
-  OutputByte(0);
-  OutputByte(1);
-  OutputByte('A');
-  finalCrc = crc;
-  OutputByte((finalCrc >> 8) & 0xFF);
-  OutputByte(finalCrc & 0xFF);
+  crc = CommWriteByte(byte, crc);
 
-  return 0;
+  return crc;
 }
-*/
+
+/***********************************************************************************************************************
+ *
+ **********************************************************************************************************************/
+void CommSendMessage(uint8_t command, uint8_t *param, uint16_t paramLength)
+{
+  Crc16Type crc = 0xFFFF;
+  uint16_t i, length = sizeof(command) + paramLength;
+
+  // STX (Not encoded)
+  crc = CommWriteByte(STX, crc);
+  // Length of command + parameter
+  crc = CommEncodeByte(length >> 8, crc);
+  crc = CommEncodeByte(length, crc);
+  // Command
+  crc = CommEncodeByte(command, crc);
+  // Parameter
+  for(i = 0; i < paramLength; i++) {
+    crc = CommEncodeByte(param[i], crc);
+  }
+  // CRC
+  CommEncodeByte(crc >> 8, 0);
+  CommEncodeByte(crc, 0);
+}

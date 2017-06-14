@@ -30,11 +30,7 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#include <stdio.h>
-#include "comm.h"
+#include <stdint.h>
 
-int main(void)
-{
-
-  return 0;
-}
+void CommOpen(char *devName);
+void CommSendMessage(uint8_t command, uint8_t *param, uint16_t paramLength);
