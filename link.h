@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
+ * Link Layer
  *
  * (C) 2017 Gergely Budai
  *
@@ -30,26 +31,14 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include "link.h"
-#include "phy.h"
+#ifndef LINK_H_
+#define LINK_H_
 
-int main(void)
-{
-  uint8_t buff[300];
-  uint16_t length, i;
+#include <stdint.h>
 
-  PhyOpen("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
-  LinkSendBuffer("f", 1);
-  length = LinkReceiveBuffer(buff);
-  PhyClose();
+#define LINK_MAX_BUFFER_LENGTH 259
 
-  printf("Buff[%u]: ", length);
-  for(i = 0; i < length; i++) {
-    printf("%02X ", buff[i]);
-  }
-  printf("\n");
+void LinkSendBuffer(const void *buffer, const uint16_t length);
+uint16_t LinkReceiveBuffer(void *buffer);
 
-  return EXIT_SUCCESS;
-}
+#endif // LINK_H_

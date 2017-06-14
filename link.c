@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
+ * Link Layer
  *
  * (C) 2017 Gergely Budai
  *
@@ -30,17 +31,13 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#include <errno.h>
-#include <fcntl.h>
+#include "link.h"
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <termios.h>
-#include <unistd.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include "crc16.h"
-#include "comm.h"
+#include "utils.h"
+#include "phy.h"
 
 #define dprintf(...) printf(__VA_ARGS__); fflush(stdout)
 //#define dprintf(fmt,...)
@@ -48,72 +45,12 @@
 static const uint8_t STX = 0x02;
 static const uint8_t ENQ = 0x10;
 
-static int port = -1;
-
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-void CommOpen(char *devName)
+static Crc16Type LinkSendByte(uint8_t byte, Crc16Type crc)
 {
-  static const speed_t portSpeed = B38400;
-  struct termios tty;
-
-  port = open(devName, O_RDWR | O_NOCTTY | O_SYNC);
-  if(port < 0) {
-    perror("open()");
-    exit(EXIT_FAILURE);
-  }
-
-  if (tcgetattr(port, &tty) < 0) {
-    perror("tcgetattr()");
-    exit(EXIT_FAILURE);
-  }
-
-  cfsetospeed(&tty, portSpeed);
-  cfsetispeed(&tty, portSpeed);
-
-  tty.c_cflag |= (CLOCAL | CREAD);    /* ignore modem controls */
-  tty.c_cflag &= ~CSIZE;
-  tty.c_cflag |= CS8;         /* 8-bit characters */
-  tty.c_cflag &= ~PARENB;     /* no parity bit */
-  tty.c_cflag &= ~CSTOPB;     /* only need 1 stop bit */
-  tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
-
-  /* setup for non-canonical mode */
-  tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-  tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-  tty.c_oflag &= ~OPOST;
-
-  tty.c_cc[VMIN] = 0;
-  tty.c_cc[VTIME] = 10;
-
-  if (tcsetattr(port, TCSANOW, &tty) != 0) {
-    perror("tcsetattr()");
-    exit(EXIT_FAILURE);
-  }
-}
-
-/***********************************************************************************************************************
- *
- **********************************************************************************************************************/
-void CommClose(void)
-{
-  if(close(port) != 0) {
-    perror("close()");
-    exit(EXIT_FAILURE);
-  }
-}
-
-/***********************************************************************************************************************
- *
- **********************************************************************************************************************/
-static Crc16Type CommSendByte(uint8_t byte, Crc16Type crc)
-{
-  if(write(port, &byte, 1) != 1) {
-    perror("write()");
-    exit(EXIT_FAILURE);
-  }
-
+  PhySendByte(byte);
   dprintf("%02X ", byte);
 
   return(Crc16UpdateByte(crc, byte));
@@ -122,14 +59,14 @@ static Crc16Type CommSendByte(uint8_t byte, Crc16Type crc)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-static Crc16Type CommEncodeByte(uint8_t byte, Crc16Type crc)
+static Crc16Type LinkEncodeByte(uint8_t byte, Crc16Type crc)
 {
   if((byte == STX) || (byte == ENQ)) {
-    crc = CommSendByte(ENQ, crc);
+    crc = LinkSendByte(ENQ, crc);
     byte += 0x80;
   }
 
-  crc = CommSendByte(byte, crc);
+  crc = LinkSendByte(byte, crc);
 
   return crc;
 }
@@ -137,37 +74,33 @@ static Crc16Type CommEncodeByte(uint8_t byte, Crc16Type crc)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-void CommSendBuffer(const void *buffer, const uint16_t length)
+void LinkSendBuffer(const void *buffer, const uint16_t length)
 {
   Crc16Type crc = 0xFFFF;
   uint16_t i;
 
   dprintf("TX: ");
   // Send STX (Not encoded)
-  crc = CommSendByte(STX, crc);
+  crc = LinkSendByte(STX, crc);
   // Send length
-  crc = CommEncodeByte(length >> 8, crc);
-  crc = CommEncodeByte(length, crc);
+  crc = LinkEncodeByte(length >> 8, crc);
+  crc = LinkEncodeByte(length, crc);
   // Send Buffer as bytes
   for(i = 0; i < length; i++) {
-    crc = CommEncodeByte(((uint8_t *)buffer)[i], crc);
+    crc = LinkEncodeByte(((uint8_t *)buffer)[i], crc);
   }
   // Send CRC
-  CommEncodeByte(crc >> 8, 0);
-  CommEncodeByte(crc, 0);
+  LinkEncodeByte(crc >> 8, 0);
+  LinkEncodeByte(crc, 0);
   dprintf("\n");
 }
 
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-static Crc16Type CommReceiveByte(uint8_t *byte, Crc16Type crc)
+static Crc16Type LinkReceiveByte(uint8_t *byte, Crc16Type crc)
 {
-  if(read(port, byte, 1) != 1) {
-    perror("read()");
-    exit(EXIT_FAILURE);
-  }
-
+  *byte = PhyReceiveByte();
   dprintf("%02X ", *byte);
 
   return(Crc16UpdateByte(crc, *byte));
@@ -176,12 +109,12 @@ static Crc16Type CommReceiveByte(uint8_t *byte, Crc16Type crc)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-static Crc16Type CommDecodeByte(uint8_t *byte, Crc16Type crc)
+static Crc16Type LinkDecodeByte(uint8_t *byte, Crc16Type crc)
 {
-  crc = CommReceiveByte(byte, crc);
+  crc = LinkReceiveByte(byte, crc);
 
   if(*byte == ENQ) {
-    crc = CommReceiveByte(byte, crc);
+    crc = LinkReceiveByte(byte, crc);
     *byte -= 0x80;
   }
 
@@ -191,7 +124,7 @@ static Crc16Type CommDecodeByte(uint8_t *byte, Crc16Type crc)
 /***********************************************************************************************************************
  *
  **********************************************************************************************************************/
-uint16_t CommReceiveBuffer(void *buffer)
+uint16_t LinkReceiveBuffer(void *buffer)
 {
   Crc16Type crc = 0xFFFF, crcIn;
   uint8_t byte;
@@ -200,38 +133,35 @@ uint16_t CommReceiveBuffer(void *buffer)
   dprintf("RX: ");
 
   // Receive STX (Not encoded)
-  crc = CommReceiveByte(&byte, crc);
+  crc = LinkReceiveByte(&byte, crc);
   if(byte != STX) {
-    perror("STX");
-    exit(EXIT_FAILURE);
+    ExitWithError("Bad packet start: %02X", byte);
   }
 
   // Receive length
-  crc = CommDecodeByte(&byte, crc);
+  crc = LinkDecodeByte(&byte, crc);
   length = (uint16_t)byte << 8;
-  crc = CommDecodeByte(&byte, crc);
+  crc = LinkDecodeByte(&byte, crc);
   length |= (uint16_t)byte;
-  if(length > COMM_MAX_PARAM_LENGTH) {
-    perror("Parameter too big");
-    exit(EXIT_FAILURE);
+  if(length > LINK_MAX_BUFFER_LENGTH) {
+    ExitWithError("Receive data too big: %u", length);
   }
 
   // Receive Buffer as bytes
   for(i = 0; i < length; i++) {
-    crc = CommDecodeByte(&(((uint8_t *)buffer)[i]), crc);
+    crc = LinkDecodeByte(&(((uint8_t *)buffer)[i]), crc);
   }
 
   // Receive CRC
-  CommDecodeByte(&byte, 0);
+  LinkDecodeByte(&byte, 0);
   crcIn = (Crc16Type)byte << 8;
-  CommDecodeByte(&byte, 0);
+  LinkDecodeByte(&byte, 0);
   crcIn |= (Crc16Type)byte;
   dprintf("\n");
 
   // Check CRC
   if(crc != crcIn) {
-    perror("CRC Error");
-    exit(EXIT_FAILURE);
+    ExitWithError("CRC Error, Calcualted: %04X, Received: %04X", crc, crcIn);
   }
 
   return length;

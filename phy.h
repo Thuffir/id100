@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
+ * Physical Layer
  *
  * (C) 2017 Gergely Budai
  *
@@ -30,11 +31,14 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#ifndef PHY_H_
+#define PHY_H_
+
 #include <stdint.h>
 
-#define COMM_MAX_PARAM_LENGTH 259
+void PhyOpen(char *devName);
+void PhyClose(void);
+void PhySendByte(uint8_t byte);
+uint8_t PhyReceiveByte(void);
 
-void CommOpen(char *devName);
-void CommClose(void);
-void CommSendBuffer(const void *buffer, const uint16_t length);
-uint16_t CommReceiveBuffer(void *buffer);
+#endif // PHY_H_
