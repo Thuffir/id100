@@ -34,10 +34,14 @@
 #define CRC16_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef uint16_t Crc16Type;
 
-Crc16Type crc16UpdateByte(Crc16Type crc16, uint8_t byte);
-Crc16Type crc16UpdateBuffer(Crc16Type crc16, uint8_t *buffer, uint32_t length);
+Crc16Type Crc16UpdateByte(Crc16Type crc16, uint8_t byte);
+Crc16Type Crc16UpdateBuffer(Crc16Type crc16, const uint8_t *buffer, uint32_t length);
+bool Crc16SelfCheck(void);
+
+#define Crc16CalculateBuffer(buffer, length) Crc16UpdateBuffer(0xFFFF, buffer, length)
 
 #endif // CRC16_H_

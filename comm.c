@@ -30,43 +30,72 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "crc16.h"
 
-/***********************************************************************************************************************
- * Update CRC-16 for one byte
- **********************************************************************************************************************/
-Crc16Type Crc16UpdateByte(Crc16Type crc16, uint8_t byte)
-{
-  static const Crc16Type polynom = 0x8005;
-  uint_fast8_t bit;
+static const uint8_t STX = 0x02;
+static const uint8_t ENQ = 0x10;
 
-  crc16 ^= byte << 8;
-  for(bit = 0; bit < 8; bit++) {
-    crc16 = (crc16 & 0x8000) ? (crc16 << 1) ^ polynom : crc16 << 1;
+static Crc16Type crc = 0xFFFF;
+
+void OutputByte(uint8_t byte)
+{
+  static bool escape = false;
+
+  if(escape == true) {
+    if((byte == STX) || (byte == ENQ)) {
+      putchar(ENQ);
+      crc = Crc16UpdateByte(crc, ENQ);
+      byte += 0x80;
+    }
+  }
+  else {
+    escape = true;
   }
 
-  return crc16;
+  putchar(byte);
+  crc = Crc16UpdateByte(crc, byte);
 }
 
-/***********************************************************************************************************************
- * Update CRC-16 for a whole buffer
- **********************************************************************************************************************/
-Crc16Type Crc16UpdateBuffer(Crc16Type crc16, const uint8_t *buffer, uint32_t length)
+/*
+int main(void)
 {
-  while(length--) {
-    crc16 = Crc16UpdateByte(crc16, *buffer++);
+  uint8_t bitmap[26], i;
+  Crc16Type finalCrc;
+
+  for(i = 0; i < sizeof(bitmap); i++) {
+    bitmap[i] = 0xAA;
   }
 
-  return crc16;
+  OutputByte(STX);
+  OutputByte(0);
+  OutputByte(27);
+  OutputByte(0x44);
+  for(i = 0; i < sizeof(bitmap); i++) {
+    OutputByte(bitmap[i]);
+  }
+  finalCrc = crc;
+  OutputByte((finalCrc >> 8) & 0xFF);
+  OutputByte(finalCrc & 0xFF);
+
+  return 0;
 }
 
-/***********************************************************************************************************************
- * CRC-16 Self check
- **********************************************************************************************************************/
-bool Crc16SelfCheck(void)
+int main(void)
 {
-  static const uint8_t text[] = "The quick brown fox jumps over the lazy dog.";
-  static const Crc16Type crc = 0x072B;
+  Crc16Type finalCrc;
 
-  return(Crc16UpdateBuffer(0xFFFF, text, sizeof(text) - 1) != crc);
+  OutputByte(STX);
+  OutputByte(0);
+  OutputByte(1);
+  OutputByte('A');
+  finalCrc = crc;
+  OutputByte((finalCrc >> 8) & 0xFF);
+  OutputByte(finalCrc & 0xFF);
+
+  return 0;
 }
+*/

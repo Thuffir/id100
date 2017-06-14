@@ -31,71 +31,12 @@
  *
  **********************************************************************************************************************/
 #include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
 
 #include "crc16.h"
 
-static const uint8_t STX = 0x02;
-static const uint8_t ENQ = 0x10;
-
-static Crc16Type crc = 0xFFFF;
-
-static void OutputByte(uint8_t byte)
-{
-  static bool escape = false;
-
-  if(escape == true) {
-    if((byte == STX) || (byte == ENQ)) {
-      putchar(ENQ);
-      crc = crc16UpdateByte(crc, ENQ);
-      byte += 0x80;
-    }
-  }
-  else {
-    escape = true;
-  }
-
-  putchar(byte);
-  crc = crc16UpdateByte(crc, byte);
-}
-
-/*
 int main(void)
 {
-  uint8_t bitmap[26], i;
-  Crc16Type finalCrc;
-
-  for(i = 0; i < sizeof(bitmap); i++) {
-    bitmap[i] = 0xAA;
-  }
-
-  OutputByte(STX);
-  OutputByte(0);
-  OutputByte(27);
-  OutputByte(0x44);
-  for(i = 0; i < sizeof(bitmap); i++) {
-    OutputByte(bitmap[i]);
-  }
-  finalCrc = crc;
-  OutputByte((finalCrc >> 8) & 0xFF);
-  OutputByte(finalCrc & 0xFF);
-
-  return 0;
-}
-*/
-
-int main(void)
-{
-  Crc16Type finalCrc;
-
-  OutputByte(STX);
-  OutputByte(0);
-  OutputByte(1);
-  OutputByte('A');
-  finalCrc = crc;
-  OutputByte((finalCrc >> 8) & 0xFF);
-  OutputByte(finalCrc & 0xFF);
+  printf("CRC16: %s\n", (Crc16SelfCheck() == false) ? "Passed" : "Failed!");
 
   return 0;
 }
