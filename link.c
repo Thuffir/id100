@@ -46,7 +46,23 @@ static const uint8_t STX = 0x02;
 static const uint8_t ENQ = 0x10;
 
 /***********************************************************************************************************************
- *
+ * Connect the link and lower layers
+ **********************************************************************************************************************/
+void LinkConnect(void *ctx)
+{
+  PhyOpen(ctx);
+}
+
+/***********************************************************************************************************************
+ * Disconnect the link and lower layers
+ **********************************************************************************************************************/
+void LinkDisconnect(void)
+{
+  PhyClose();
+}
+
+/***********************************************************************************************************************
+ * Send one byte to the physical layer and update CRC
  **********************************************************************************************************************/
 static Crc16Type LinkSendByte(uint8_t byte, Crc16Type crc)
 {
@@ -57,7 +73,7 @@ static Crc16Type LinkSendByte(uint8_t byte, Crc16Type crc)
 }
 
 /***********************************************************************************************************************
- *
+ * Encode and send special bytes and update CRC
  **********************************************************************************************************************/
 static Crc16Type LinkEncodeByte(uint8_t byte, Crc16Type crc)
 {
@@ -72,7 +88,7 @@ static Crc16Type LinkEncodeByte(uint8_t byte, Crc16Type crc)
 }
 
 /***********************************************************************************************************************
- *
+ * Build a frame around the given buffer and send to physical layer
  **********************************************************************************************************************/
 void LinkSendBuffer(const void *buffer, const uint16_t length)
 {
@@ -96,7 +112,7 @@ void LinkSendBuffer(const void *buffer, const uint16_t length)
 }
 
 /***********************************************************************************************************************
- *
+ * Receive one byte over the link layer and update CRC
  **********************************************************************************************************************/
 static Crc16Type LinkReceiveByte(uint8_t *byte, Crc16Type crc)
 {
@@ -107,7 +123,7 @@ static Crc16Type LinkReceiveByte(uint8_t *byte, Crc16Type crc)
 }
 
 /***********************************************************************************************************************
- *
+ * Receive and decode special bytes and update CRC
  **********************************************************************************************************************/
 static Crc16Type LinkDecodeByte(uint8_t *byte, Crc16Type crc)
 {
@@ -122,7 +138,7 @@ static Crc16Type LinkDecodeByte(uint8_t *byte, Crc16Type crc)
 }
 
 /***********************************************************************************************************************
- *
+ * Receive and check a frame from the physical layer
  **********************************************************************************************************************/
 uint16_t LinkReceiveBuffer(void *buffer)
 {
@@ -135,7 +151,7 @@ uint16_t LinkReceiveBuffer(void *buffer)
   // Receive STX (Not encoded)
   crc = LinkReceiveByte(&byte, crc);
   if(byte != STX) {
-    ExitWithError("Bad packet start: %02X", byte);
+    ExitWithError("Bad packet start byte: %02X", byte);
   }
 
   // Receive length
