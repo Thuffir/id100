@@ -36,12 +36,10 @@
 
 #include <stdint.h>
 
-// Max message length: 258 bytes + 1 byte command
-#define LINK_MAX_BUFFER_LENGTH 259
-
 void LinkConnect(void *ctx);
 void LinkDisconnect(void);
 void LinkSendBuffer(const void *buffer, const uint16_t length);
-uint16_t LinkReceiveBuffer(void *buffer);
+uint16_t LinkReceiveBuffer(void *buffer, uint16_t bufLen)
+;
 
 #endif // LINK_H_

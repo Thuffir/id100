@@ -54,3 +54,25 @@ void ExitWithError(char *fmt,...)
 
   exit(EXIT_FAILURE);
 }
+
+/***********************************************************************************************************************
+ * Print a buffer content in HEX
+ **********************************************************************************************************************/
+void PrintBuffer(void *buffer, uint16_t len, const char *fmt, ...)
+{
+  va_list va;
+  uint16_t i;
+
+  // Print message
+  va_start(va, fmt);
+  vprintf(fmt, va);
+  va_end(va);
+
+  // Print buffer
+  for(i = 0; i < len; i++) {
+    printf("%02X ", ((uint8_t *)buffer)[i]);
+  }
+
+  // Add newline at the end
+  printf("\n");
+}

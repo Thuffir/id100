@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
+ * Application Layer
  *
  * (C) 2017 Gergely Budai
  *
@@ -30,12 +31,33 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef APP_H_
+#define APP_H_
 
 #include <stdint.h>
 
-void ExitWithError(char *fmt, ...);
-void PrintBuffer(void *buffer, uint16_t len, const char *fmt, ...);
+#define __packed __attribute__((__packed__))
 
-#endif // UTILS_H_
+typedef struct __packed {
+  uint8_t major[2];
+  uint8_t minor[2];
+  uint8_t revision[2];
+} AppVersionType;
+
+typedef struct __packed {
+  uint8_t day;
+  uint8_t month;
+  uint8_t year;
+  uint8_t weekDay;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  uint8_t summerTime;
+} AppDateTimeType;
+
+void AppInit(void *ctx);
+void AppCleanup(void);
+AppVersionType *AppGetVersion(void);
+AppDateTimeType *AppGetDateTime(void);
+
+#endif // APP_H_

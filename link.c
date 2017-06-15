@@ -140,7 +140,7 @@ static Crc16Type LinkDecodeByte(uint8_t *byte, Crc16Type crc)
 /***********************************************************************************************************************
  * Receive and check a frame from the physical layer
  **********************************************************************************************************************/
-uint16_t LinkReceiveBuffer(void *buffer)
+uint16_t LinkReceiveBuffer(void *buffer, uint16_t bufLen)
 {
   Crc16Type crc = 0xFFFF, crcIn;
   uint8_t byte;
@@ -159,7 +159,7 @@ uint16_t LinkReceiveBuffer(void *buffer)
   length = (uint16_t)byte << 8;
   crc = LinkDecodeByte(&byte, crc);
   length |= (uint16_t)byte;
-  if(length > LINK_MAX_BUFFER_LENGTH) {
+  if(length > bufLen) {
     ExitWithError("Receive data too big: %u", length);
   }
 

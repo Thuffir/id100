@@ -32,23 +32,15 @@
  **********************************************************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
-#include "link.h"
+#include "app.h"
 
 int main(void)
 {
-  uint8_t buff[300];
-  uint16_t length, i;
+  AppInit("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
+  AppGetVersion();
+  AppGetDateTime();
+  AppCleanup();
 
-  LinkConnect("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
-  LinkSendBuffer("f", 1);
-  length = LinkReceiveBuffer(buff);
-  LinkDisconnect();
-
-  printf("Buff[%u]: ", length);
-  for(i = 0; i < length; i++) {
-    printf("%02X ", buff[i]);
-  }
-  printf("\n");
 
   return EXIT_SUCCESS;
 }
