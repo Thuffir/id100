@@ -33,17 +33,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "app.h"
+#include "utils.h"
 
 int main(void)
 {
-  AppVersionType version;
-  AppDateTimeType dateTime;
-
   AppInit("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
-  AppGetVersion(&version);
-  AppGetDateTime(&dateTime);
-  AppCleanup();
 
+  AppVersionType version;
+  AppGetVersion(&version);
+  PrintBuffer(&version, sizeof(version), "Version: ");
+
+  AppDateTimeType dateTime;
+  AppGetDateTime(&dateTime);
+  PrintBuffer(&dateTime, sizeof(dateTime), "Date and Time: ");
+
+  AppIntensityType intensity;
+  AppGetIntensity(&intensity);
+  PrintBuffer(&intensity, sizeof(intensity), "Intensity: ");
+
+  AppLastCalibrationType lastCalibration;
+  AppGetLastCalibration(&lastCalibration);
+  PrintBuffer(&lastCalibration, sizeof(lastCalibration), "Calibration: ");
+
+  AppStandbyType standby;
+  AppGetStandby(&standby);
+  PrintBuffer(&standby, sizeof(standby), "Standby: ");
+
+  AppCleanup();
 
   return EXIT_SUCCESS;
 }

@@ -35,6 +35,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sys/file.h>
 #include "utils.h"
 
 static int port = -1;
@@ -50,6 +51,10 @@ void PhyOpen(char *devName)
   port = open(devName, O_RDWR | O_NOCTTY | O_SYNC);
   if(port < 0) {
     ExitWithError("Could not open device: %s", devName);
+  }
+
+  if(flock(port, LOCK_EX) != 0) {
+    ExitWithError("Could not lock device: %s", devName);
   }
 
   if(tcgetattr(port, &tty) < 0) {
@@ -84,6 +89,10 @@ void PhyOpen(char *devName)
  **********************************************************************************************************************/
 void PhyClose(void)
 {
+  if(flock(port, LOCK_UN) != 0) {
+    ExitWithError("Could not unlock device");
+  }
+
   if(close(port) != 0) {
     ExitWithError("Could not close device");
   }

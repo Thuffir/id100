@@ -39,8 +39,8 @@
 #include "utils.h"
 #include "phy.h"
 
-#define dprintf(...) printf(__VA_ARGS__); fflush(stdout)
-//#define dprintf(fmt,...)
+//#define dprintf(...) printf(__VA_ARGS__); fflush(stdout)
+#define dprintf(fmt,...)
 
 static const uint8_t STX = 0x02;
 static const uint8_t ENQ = 0x10;
@@ -90,7 +90,7 @@ static Crc16Type LinkEncodeByte(uint8_t byte, Crc16Type crc)
 /***********************************************************************************************************************
  * Build a frame around the given command and buffer and send it to physical layer
  **********************************************************************************************************************/
-void LinkSendCommandAndBuffer(uint8_t command, const void *buffer, const uint16_t length)
+void LinkSendCommandAndBuffer(const uint8_t command, const void *buffer, const uint16_t length)
 {
   Crc16Type crc = 0xFFFF;
   uint16_t i;

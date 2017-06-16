@@ -36,7 +36,11 @@
 #include "utils.h"
 #include "link.h"
 
-static void AppRequestAndReceive(uint8_t command, void *sendBuf, uint16_t sendBufLen, void *recvBuf, uint16_t recvBufLen)
+/***********************************************************************************************************************
+ * Send command and data to link layer and receive answer from it
+ **********************************************************************************************************************/
+static void AppSendAndReceive(const uint8_t command, const void *sendBuf, const uint16_t sendBufLen,
+  void *recvBuf, const uint16_t recvBufLen)
 {
   uint8_t recvCmd;
   uint16_t recvLength;
@@ -44,8 +48,9 @@ static void AppRequestAndReceive(uint8_t command, void *sendBuf, uint16_t sendBu
   // Send command and optional data
   LinkSendCommandAndBuffer(command, sendBuf, sendBufLen);
 
+  // Receive answer
   recvLength = LinkReceiveCommandAndBuffer(&recvCmd, recvBuf, recvBufLen);
-  // Check received command
+  // Check the received command
   if(recvCmd != command) {
     ExitWithError("Invalid answer command received: '%c'", recvCmd);
   }
@@ -55,22 +60,130 @@ static void AppRequestAndReceive(uint8_t command, void *sendBuf, uint16_t sendBu
   }
 }
 
+/***********************************************************************************************************************
+ * Initialize the application and lower layers
+ **********************************************************************************************************************/
 void AppInit(void *ctx)
 {
   LinkConnect(ctx);
 }
 
+/***********************************************************************************************************************
+ * Clean up the application and lower layers
+ **********************************************************************************************************************/
 void AppCleanup(void)
 {
   LinkDisconnect();
 }
 
+/***********************************************************************************************************************
+ * Get the firmware version
+ **********************************************************************************************************************/
 void AppGetVersion(AppVersionType *version)
 {
-  AppRequestAndReceive('v', NULL, 0, version, sizeof(*version));
+  AppSendAndReceive('v', NULL, 0, version, sizeof(*version));
 }
 
+/***********************************************************************************************************************
+ * Get the actual date and time
+ **********************************************************************************************************************/
 void AppGetDateTime(AppDateTimeType *dateTime)
 {
-  AppRequestAndReceive('t', NULL, 0, dateTime, sizeof(*dateTime));
+  AppSendAndReceive('t', NULL, 0, dateTime, sizeof(*dateTime));
+}
+
+/***********************************************************************************************************************
+ * Set the actual date and time
+ **********************************************************************************************************************/
+void AppSetDateTime(const AppDateTimeType *dateTime)
+{
+  AppSendAndReceive('T', dateTime, sizeof(*dateTime), NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Set normal mode
+ **********************************************************************************************************************/
+void AppSetNormalMode(void)
+{
+  AppSendAndReceive('A', NULL, 0, NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Set preview mode
+ **********************************************************************************************************************/
+void AppSetPreviewMode(void)
+{
+  AppSendAndReceive('a', NULL, 0, NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Factory Reset
+ **********************************************************************************************************************/
+void AppFactoryReset(void)
+{
+  AppSendAndReceive('X', NULL, 0, NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Activate Bootloader
+ **********************************************************************************************************************/
+void AppActivateBootloader(void)
+{
+  AppSendAndReceive('!', NULL, 0, NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Set preview picture matrix
+ **********************************************************************************************************************/
+void AppSetPreviewMatrix(const MatrixBitmapType *matrix)
+{
+  AppSendAndReceive('D', matrix, sizeof(*matrix), NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Get the standard intensity
+ **********************************************************************************************************************/
+void AppGetIntensity(AppIntensityType *intensity)
+{
+  AppSendAndReceive('b', NULL, 0, intensity, sizeof(*intensity));
+}
+
+/***********************************************************************************************************************
+ * Set the standard intensity
+ **********************************************************************************************************************/
+void AppSetIntensity(const AppIntensityType *intensity)
+{
+  AppSendAndReceive('B', intensity, sizeof(*intensity), NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Get last calibration data
+ **********************************************************************************************************************/
+void AppGetLastCalibration(AppLastCalibrationType *lastCalibration)
+{
+  AppSendAndReceive('c', NULL, 0, lastCalibration, sizeof(*lastCalibration));
+}
+
+/***********************************************************************************************************************
+ * Set RTC Calibration value
+ **********************************************************************************************************************/
+void AppSetRtcCalibration(const AppRtcCalibrationValueType *calibration)
+{
+  AppSendAndReceive('C', calibration, sizeof(*calibration), NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Get Standby times
+ **********************************************************************************************************************/
+void AppGetStandby(AppStandbyType *standby)
+{
+  AppSendAndReceive('s', NULL, 0, standby, sizeof(*standby));
+}
+
+/***********************************************************************************************************************
+ * Set Standby times
+ **********************************************************************************************************************/
+void AppSetStandby(const AppStandbyType *standby)
+{
+  AppSendAndReceive('S', standby, sizeof(*standby), NULL, 0);
 }

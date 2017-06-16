@@ -38,7 +38,7 @@
 
 void LinkConnect(void *ctx);
 void LinkDisconnect(void);
-void LinkSendCommandAndBuffer(uint8_t command, const void *buffer, const uint16_t length);
+void LinkSendCommandAndBuffer(const uint8_t command, const void *buffer, const uint16_t length);
 uint16_t LinkReceiveCommandAndBuffer(uint8_t *command, void *buffer, uint16_t bufLen);
 
 #endif // LINK_H_

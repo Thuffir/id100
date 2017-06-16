@@ -36,28 +36,126 @@
 
 #include <stdint.h>
 
+// Definition for packed structures
 #define __packed __attribute__((__packed__))
 
+/***********************************************************************************************************************
+ * Layer init and cleanup
+ **********************************************************************************************************************/
+void AppInit(void *ctx);
+void AppCleanup(void);
+
+/***********************************************************************************************************************
+ * Firmware Version
+ **********************************************************************************************************************/
 typedef struct __packed {
   uint8_t major[2];
   uint8_t minor[2];
   uint8_t revision[2];
 } AppVersionType;
 
+void AppGetVersion(AppVersionType *version);
+
+/***********************************************************************************************************************
+ * Date and time
+ **********************************************************************************************************************/
+typedef enum __packed {
+  AppWinterTime = 0,
+  AppSummerTime = 1
+} AppDaylightSavingType;
+
 typedef struct __packed {
   uint8_t day;
   uint8_t month;
   uint8_t year;
-  uint8_t weekDay;
+  enum __packed {
+    AppSunday    = 0,
+    AppMonday    = 1,
+    AppTuesday   = 2,
+    AppWednesday = 3,
+    AppThursday  = 4,
+    AppFriday    = 5,
+    AppSaturday  = 6
+  } weekDay;
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
-  uint8_t summerTime;
+  AppDaylightSavingType daylightSaving;
 } AppDateTimeType;
 
-void AppInit(void *ctx);
-void AppCleanup(void);
-void AppGetVersion(AppVersionType *version);
 void AppGetDateTime(AppDateTimeType *dateTime);
+void AppSetDateTime(const AppDateTimeType *dateTime);
+
+/***********************************************************************************************************************
+ * Operating modes
+ **********************************************************************************************************************/
+void AppFactoryReset(void);
+void AppActivateBootloader(void);
+void AppSetNormalMode(void);
+void AppSetPreviewMode(void);
+
+/***********************************************************************************************************************
+ * Display bitmap matrix
+ **********************************************************************************************************************/
+typedef uint8_t MatrixBitmapType[26];
+void AppSetPreviewMatrix(const MatrixBitmapType *matrix);
+
+/***********************************************************************************************************************
+ * Intensity
+ **********************************************************************************************************************/
+typedef enum __packed {
+  AppIntensity1 = 0x08,
+  AppIntensity2 = 0x0C,
+  AppIntensity3 = 0x13,
+  AppIntensity4 = 0x1D,
+  AppIntensity5 = 0x2D,
+  AppIntensity6 = 0x46,
+  AppIntensity7 = 0x6B,
+  AppIntensity8 = 0xA6,
+  AppIntensity9 = 0xFF,
+} AppIntensityType;
+
+void AppGetIntensity(AppIntensityType *intensity);
+void AppSetIntensity(const AppIntensityType *intensity);
+
+/***********************************************************************************************************************
+ * RTC Calibration
+ **********************************************************************************************************************/
+typedef uint8_t AppRtcCalibrationValueType[4];
+void AppSetRtcCalibration(const AppRtcCalibrationValueType *calibration);
+
+typedef struct __packed {
+  uint8_t day;
+  uint8_t month;
+  uint8_t year;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  AppDaylightSavingType daylightSaving;
+} AppRtcCalibrationDateTime;
+
+typedef struct __packed {
+  AppRtcCalibrationDateTime actualDateTime;
+  AppRtcCalibrationDateTime lastCalibrationDateTime;
+} AppLastCalibrationType;
+
+void AppGetLastCalibration(AppLastCalibrationType *lastCalibration);
+
+/***********************************************************************************************************************
+ * Standby
+ **********************************************************************************************************************/
+typedef struct __packed {
+  uint8_t hourOn;
+  uint8_t minuteOn;
+  uint8_t hourOff;
+  uint8_t minuteOff;
+  enum __packed {
+    AppInactive = 0,
+    AppActive   = 1
+  } active;
+} AppStandbyType;
+
+void AppGetStandby(AppStandbyType *standby);
+void AppSetStandby(const AppStandbyType *standby);
 
 #endif // APP_H_
