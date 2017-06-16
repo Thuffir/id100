@@ -49,9 +49,9 @@ void AppCleanup(void);
  * Firmware Version
  **********************************************************************************************************************/
 typedef struct __packed {
-  uint8_t major[2];
-  uint8_t minor[2];
-  uint8_t revision[2];
+  uint16_t major;
+  uint16_t minor;
+  uint16_t revision;
 } AppVersionType;
 
 void AppGetVersion(AppVersionType *version);
@@ -97,8 +97,8 @@ void AppSetPreviewMode(void);
 /***********************************************************************************************************************
  * Display bitmap matrix
  **********************************************************************************************************************/
-typedef uint8_t MatrixBitmapType[26];
-void AppSetPreviewMatrix(const MatrixBitmapType *matrix);
+typedef uint8_t AppMatrixBitmapType[26];
+void AppSetPreviewMatrix(const AppMatrixBitmapType *matrix);
 
 /***********************************************************************************************************************
  * Intensity
@@ -157,5 +157,22 @@ typedef struct __packed {
 
 void AppGetStandby(AppStandbyType *standby);
 void AppSetStandby(const AppStandbyType *standby);
+
+/***********************************************************************************************************************
+ * Flash Clock configuration
+ **********************************************************************************************************************/
+typedef struct __packed {
+  uint16_t pageNumber;
+  AppMatrixBitmapType matrixBitmap[6];
+} AppClockConfigPageType;
+
+void AppSetFlashClockConfig(AppClockConfigPageType *clockConfig);
+
+typedef struct __packed {
+  AppClockConfigPageType clockConfigPage;
+  uint8_t dummy[258 - sizeof(AppClockConfigPageType)];
+} AppClockConfigPageReadType;
+
+void AppGetFlashClockConfig(uint16_t pageNumber, AppClockConfigPageReadType *clockConfig);
 
 #endif // APP_H_

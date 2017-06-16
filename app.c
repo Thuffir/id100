@@ -36,6 +36,16 @@
 #include "utils.h"
 #include "link.h"
 
+// Macro to correct endianness (ID100 is Big Endian)
+#if(__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
+#define APP_SWAP_ENDIAN_16(num) ((num) = ((num) << 8) | ((num) >> 8))
+#else
+#define APP_SWAP_ENDIAN_16(num)
+#endif
+
+// NUmber of flash pages holding the clock configuration
+#define APP_CLOCK_CONFIG_FLASH_PAGES 14400
+
 /***********************************************************************************************************************
  * Send command and data to link layer and receive answer from it
  **********************************************************************************************************************/
@@ -82,6 +92,9 @@ void AppCleanup(void)
 void AppGetVersion(AppVersionType *version)
 {
   AppSendAndReceive('v', NULL, 0, version, sizeof(*version));
+  APP_SWAP_ENDIAN_16(version->major);
+  APP_SWAP_ENDIAN_16(version->minor);
+  APP_SWAP_ENDIAN_16(version->revision);
 }
 
 /***********************************************************************************************************************
@@ -135,7 +148,7 @@ void AppActivateBootloader(void)
 /***********************************************************************************************************************
  * Set preview picture matrix
  **********************************************************************************************************************/
-void AppSetPreviewMatrix(const MatrixBitmapType *matrix)
+void AppSetPreviewMatrix(const AppMatrixBitmapType *matrix)
 {
   AppSendAndReceive('D', matrix, sizeof(*matrix), NULL, 0);
 }
@@ -186,4 +199,46 @@ void AppGetStandby(AppStandbyType *standby)
 void AppSetStandby(const AppStandbyType *standby)
 {
   AppSendAndReceive('S', standby, sizeof(*standby), NULL, 0);
+}
+
+/***********************************************************************************************************************
+ * Get Flash Clock configuration
+ **********************************************************************************************************************/
+void AppGetFlashClockConfig(uint16_t pageNumber, AppClockConfigPageReadType *clockConfig)
+{
+  // Check page number
+  if(pageNumber >= APP_CLOCK_CONFIG_FLASH_PAGES) {
+    ExitWithError("Invalid flash page number: %u", pageNumber);
+  }
+
+  APP_SWAP_ENDIAN_16(pageNumber);
+  AppSendAndReceive('f', &pageNumber, sizeof(pageNumber), clockConfig, sizeof(*clockConfig));
+  APP_SWAP_ENDIAN_16(pageNumber);
+  APP_SWAP_ENDIAN_16(clockConfig->clockConfigPage.pageNumber);
+
+  if(clockConfig->clockConfigPage.pageNumber != pageNumber) {
+    ExitWithError("Bad page number: %u", clockConfig->clockConfigPage.pageNumber);
+  }
+}
+
+/***********************************************************************************************************************
+ * Set Flash Clock configuration
+ **********************************************************************************************************************/
+void AppSetFlashClockConfig(AppClockConfigPageType *clockConfig)
+{
+  uint16_t pageNumber;
+
+  // Check page number
+  if(clockConfig->pageNumber >= APP_CLOCK_CONFIG_FLASH_PAGES) {
+    ExitWithError("Invalid flash page number: %u", clockConfig->pageNumber);
+  }
+
+  APP_SWAP_ENDIAN_16(clockConfig->pageNumber);
+  AppSendAndReceive('F', clockConfig, sizeof(*clockConfig), &pageNumber, sizeof(pageNumber));
+  APP_SWAP_ENDIAN_16(clockConfig->pageNumber);
+  APP_SWAP_ENDIAN_16(pageNumber);
+
+  if(pageNumber != clockConfig->pageNumber) {
+    ExitWithError("Bad page number: %u", pageNumber);
+  }
 }
