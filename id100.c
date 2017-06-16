@@ -36,9 +36,12 @@
 
 int main(void)
 {
+  AppVersionType version;
+  AppDateTimeType dateTime;
+
   AppInit("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
-  AppGetVersion();
-  AppGetDateTime();
+  AppGetVersion(&version);
+  AppGetDateTime(&dateTime);
   AppCleanup();
 
 

@@ -57,7 +57,7 @@ typedef struct __packed {
 
 void AppInit(void *ctx);
 void AppCleanup(void);
-AppVersionType *AppGetVersion(void);
-AppDateTimeType *AppGetDateTime(void);
+void AppGetVersion(AppVersionType *version);
+void AppGetDateTime(AppDateTimeType *dateTime);
 
 #endif // APP_H_

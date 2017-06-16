@@ -88,9 +88,9 @@ static Crc16Type LinkEncodeByte(uint8_t byte, Crc16Type crc)
 }
 
 /***********************************************************************************************************************
- * Build a frame around the given buffer and send to physical layer
+ * Build a frame around the given command and buffer and send it to physical layer
  **********************************************************************************************************************/
-void LinkSendBuffer(const void *buffer, const uint16_t length)
+void LinkSendCommandAndBuffer(uint8_t command, const void *buffer, const uint16_t length)
 {
   Crc16Type crc = 0xFFFF;
   uint16_t i;
@@ -98,9 +98,11 @@ void LinkSendBuffer(const void *buffer, const uint16_t length)
   dprintf("TX: ");
   // Send STX (Not encoded)
   crc = LinkSendByte(STX, crc);
-  // Send length
-  crc = LinkEncodeByte(length >> 8, crc);
-  crc = LinkEncodeByte(length, crc);
+  // Send length (command plus buffer)
+  crc = LinkEncodeByte((length + 1) >> 8, crc);
+  crc = LinkEncodeByte((length + 1), crc);
+  // Send Command
+  crc = LinkEncodeByte(command, crc);
   // Send Buffer as bytes
   for(i = 0; i < length; i++) {
     crc = LinkEncodeByte(((uint8_t *)buffer)[i], crc);
@@ -140,7 +142,7 @@ static Crc16Type LinkDecodeByte(uint8_t *byte, Crc16Type crc)
 /***********************************************************************************************************************
  * Receive and check a frame from the physical layer
  **********************************************************************************************************************/
-uint16_t LinkReceiveBuffer(void *buffer, uint16_t bufLen)
+uint16_t LinkReceiveCommandAndBuffer(uint8_t *command, void *buffer, uint16_t bufLen)
 {
   Crc16Type crc = 0xFFFF, crcIn;
   uint8_t byte;
@@ -154,14 +156,18 @@ uint16_t LinkReceiveBuffer(void *buffer, uint16_t bufLen)
     ExitWithError("Bad packet start byte: %02X", byte);
   }
 
-  // Receive length
+  // Receive length (command and buffer)
   crc = LinkDecodeByte(&byte, crc);
   length = (uint16_t)byte << 8;
   crc = LinkDecodeByte(&byte, crc);
   length |= (uint16_t)byte;
+  length--;
   if(length > bufLen) {
     ExitWithError("Receive data too big: %u", length);
   }
+
+  // Receive command
+  crc = LinkDecodeByte(command, crc);
 
   // Receive Buffer as bytes
   for(i = 0; i < length; i++) {

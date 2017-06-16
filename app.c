@@ -36,50 +36,22 @@
 #include "utils.h"
 #include "link.h"
 
-typedef enum {
-  APP_COMMAND_VERSION,
-  APP_COMMAND_TIME_GET,
-
-  APP_COMMAND_INVALID
-} AppCommandType;
-
-static struct __packed AppPacketStruct {
-  uint8_t command;
-  union {
-    AppVersionType version;
-    AppDateTimeType dateTime;
-  } data;
-} appPacket;
-
-// Helper macro to get the length until the end of a specific member
-#define APP_PACKET_GET_LENGTH_UNTIL(name) (offsetof(struct AppPacketStruct, name) + sizeof(((struct AppPacketStruct *)NULL)->name))
-
-static void AppRequestAndReceive(AppCommandType command)
+static void AppRequestAndReceive(uint8_t command, void *sendBuf, uint16_t sendBufLen, void *recvBuf, uint16_t recvBufLen)
 {
-  static const struct {
-    const uint8_t  commandByte;
-    const uint16_t requestLength;
-    const uint16_t answerLength;
-  } commandInfos[] = {
-    [APP_COMMAND_VERSION]   = { 'v', APP_PACKET_GET_LENGTH_UNTIL(command), APP_PACKET_GET_LENGTH_UNTIL(data.version) },
-    [APP_COMMAND_TIME_GET]  = { 't', APP_PACKET_GET_LENGTH_UNTIL(command), APP_PACKET_GET_LENGTH_UNTIL(data.dateTime) },
-  };
+  uint8_t recvCmd;
+  uint16_t recvLength;
 
-  uint16_t length;
+  // Send command and optional data
+  LinkSendCommandAndBuffer(command, sendBuf, sendBufLen);
 
-  if(command >= APP_COMMAND_INVALID) {
-    ExitWithError("Invalid command %u", command);
+  recvLength = LinkReceiveCommandAndBuffer(&recvCmd, recvBuf, recvBufLen);
+  // Check received command
+  if(recvCmd != command) {
+    ExitWithError("Invalid answer command received: '%c'", recvCmd);
   }
-
-  appPacket.command = commandInfos[command].commandByte;
-  LinkSendBuffer(&appPacket, commandInfos[command].requestLength);
-
-  length = LinkReceiveBuffer(&appPacket, sizeof(appPacket));
-  if(length != commandInfos[command].answerLength) {
-    ExitWithError("Invalid length received: %u", length);
-  }
-  if(appPacket.command != commandInfos[command].commandByte) {
-    ExitWithError("Invalid answer received: '%c'", appPacket.command);
+  // Check received buffer length
+  if(recvLength != recvBufLen) {
+    ExitWithError("Invalid length received: %u", recvLength);
   }
 }
 
@@ -93,14 +65,12 @@ void AppCleanup(void)
   LinkDisconnect();
 }
 
-AppVersionType *AppGetVersion(void)
+void AppGetVersion(AppVersionType *version)
 {
-  AppRequestAndReceive(APP_COMMAND_VERSION);
-  return(&appPacket.data.version);
+  AppRequestAndReceive('v', NULL, 0, version, sizeof(*version));
 }
 
-AppDateTimeType *AppGetDateTime(void)
+void AppGetDateTime(AppDateTimeType *dateTime)
 {
-  AppRequestAndReceive(APP_COMMAND_TIME_GET);
-  return(&appPacket.data.dateTime);
+  AppRequestAndReceive('t', NULL, 0, dateTime, sizeof(*dateTime));
 }
