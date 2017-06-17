@@ -240,3 +240,20 @@ void AppSetFlashConfig(FlashConfigPageType *config)
     ExitWithError("Bad page number received: %u", pageNumber);
   }
 }
+
+/***********************************************************************************************************************
+ * Get appointments
+ **********************************************************************************************************************/
+void AppGetAppointments(AppointmentsConfigType *appointments)
+{
+  AppSendAndReceive('r', NULL, 0, appointments, sizeof(*appointments));
+}
+
+/***********************************************************************************************************************
+ * Set appointments
+ **********************************************************************************************************************/
+void AppSetAppointments(const AppointmentsConfigType *appointments)
+{
+  AppSendAndReceive('R', appointments, sizeof(*appointments), NULL, 0);
+}
+

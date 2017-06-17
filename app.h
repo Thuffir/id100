@@ -205,4 +205,11 @@ typedef struct __packed {
 void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config);
 void AppSetFlashConfig(FlashConfigPageType *config);
 
+/***********************************************************************************************************************
+ * Appointments
+ **********************************************************************************************************************/
+typedef AppAppointmentType AppointmentsConfigType[20];
+void AppGetAppointments(AppointmentsConfigType *appointments);
+void AppSetAppointments(const AppointmentsConfigType *appointments);
+
 #endif // APP_H_

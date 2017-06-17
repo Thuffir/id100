@@ -60,8 +60,12 @@ int main(void)
   PrintBuffer(&standby, sizeof(standby), "Standby: ");
 
   FlashConfigPageType config;
-  AppGetFlashConfigPage(0, &config);
+  AppGetFlashConfigPage(14400, &config);
   PrintBuffer(&config, sizeof(config), "Config: ");
+
+  AppointmentsConfigType appointments;
+  AppGetAppointments(&appointments);
+  PrintBuffer(&appointments, sizeof(appointments), "Appointments: ");
 
   AppCleanup();
 
