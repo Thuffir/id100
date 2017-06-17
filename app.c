@@ -36,6 +36,9 @@
 #include "utils.h"
 #include "link.h"
 
+// NUmber of flash pages holding the clock configuration
+#define APP_CLOCK_CONFIG_FLASH_PAGES 14400
+
 // Macro to correct endianness (ID100 is Big Endian)
 #if(__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
 #define APP_SWAP_ENDIAN_16(num) ((num) = ((num) << 8) | ((num) >> 8))
@@ -43,8 +46,8 @@
 #define APP_SWAP_ENDIAN_16(num)
 #endif
 
-// NUmber of flash pages holding the clock configuration
-#define APP_CLOCK_CONFIG_FLASH_PAGES 14400
+// Helper macro to get the length until the end of a specific member in a structure
+#define APP_GET_LENGTH_UNTIL(type, name) (offsetof(type, name) + sizeof(((type *)NULL)->name))
 
 /***********************************************************************************************************************
  * Send command and data to link layer and receive answer from it
@@ -202,43 +205,38 @@ void AppSetStandby(const AppStandbyType *standby)
 }
 
 /***********************************************************************************************************************
- * Get Flash Clock configuration
+ * Get Flash configuration page
  **********************************************************************************************************************/
-void AppGetFlashClockConfig(uint16_t pageNumber, AppClockConfigPageReadType *clockConfig)
+void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config)
 {
-  // Check page number
-  if(pageNumber >= APP_CLOCK_CONFIG_FLASH_PAGES) {
-    ExitWithError("Invalid flash page number: %u", pageNumber);
-  }
-
   APP_SWAP_ENDIAN_16(pageNumber);
-  AppSendAndReceive('f', &pageNumber, sizeof(pageNumber), clockConfig, sizeof(*clockConfig));
+  AppSendAndReceive('f', &pageNumber, sizeof(pageNumber), config, sizeof(*config));
   APP_SWAP_ENDIAN_16(pageNumber);
-  APP_SWAP_ENDIAN_16(clockConfig->clockConfigPage.pageNumber);
+  APP_SWAP_ENDIAN_16(config->pageNumber);
 
-  if(clockConfig->clockConfigPage.pageNumber != pageNumber) {
-    ExitWithError("Bad page number: %u", clockConfig->clockConfigPage.pageNumber);
+  if(config->pageNumber != pageNumber) {
+    ExitWithError("Bad page number received: %u", config->pageNumber);
   }
 }
 
 /***********************************************************************************************************************
- * Set Flash Clock configuration
+ * Set Flash configuration
  **********************************************************************************************************************/
-void AppSetFlashClockConfig(AppClockConfigPageType *clockConfig)
+void AppSetFlashConfig(FlashConfigPageType *config)
 {
   uint16_t pageNumber;
 
-  // Check page number
-  if(clockConfig->pageNumber >= APP_CLOCK_CONFIG_FLASH_PAGES) {
-    ExitWithError("Invalid flash page number: %u", clockConfig->pageNumber);
-  }
+  // Check if we are writing clock configuration or appointment data based on page number
+  uint16_t size = (config->pageNumber < APP_CLOCK_CONFIG_FLASH_PAGES) ?
+    APP_GET_LENGTH_UNTIL(FlashConfigPageType, config.clockConfig) :
+    APP_GET_LENGTH_UNTIL(FlashConfigPageType, config.appointmentConfig);
 
-  APP_SWAP_ENDIAN_16(clockConfig->pageNumber);
-  AppSendAndReceive('F', clockConfig, sizeof(*clockConfig), &pageNumber, sizeof(pageNumber));
-  APP_SWAP_ENDIAN_16(clockConfig->pageNumber);
+  APP_SWAP_ENDIAN_16(config->pageNumber);
+  AppSendAndReceive('F', config, size, &pageNumber, sizeof(pageNumber));
+  APP_SWAP_ENDIAN_16(config->pageNumber);
   APP_SWAP_ENDIAN_16(pageNumber);
 
-  if(pageNumber != clockConfig->pageNumber) {
-    ExitWithError("Bad page number: %u", pageNumber);
+  if(pageNumber != config->pageNumber) {
+    ExitWithError("Bad page number received: %u", pageNumber);
   }
 }

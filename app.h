@@ -40,6 +40,14 @@
 #define __packed __attribute__((__packed__))
 
 /***********************************************************************************************************************
+ * Common Stuff
+ **********************************************************************************************************************/
+  typedef enum __packed {
+    AppInactive = 0,
+    AppActive   = 1
+  } AppActiveType;
+
+/***********************************************************************************************************************
  * Layer init and cleanup
  **********************************************************************************************************************/
 void AppInit(void *ctx);
@@ -64,19 +72,21 @@ typedef enum __packed {
   AppSummerTime = 1
 } AppDaylightSavingType;
 
+typedef enum __packed {
+  AppSunday    = 0,
+  AppMonday    = 1,
+  AppTuesday   = 2,
+  AppWednesday = 3,
+  AppThursday  = 4,
+  AppFriday    = 5,
+  AppSaturday  = 6
+} AppWeekDayType;
+
 typedef struct __packed {
   uint8_t day;
   uint8_t month;
   uint8_t year;
-  enum __packed {
-    AppSunday    = 0,
-    AppMonday    = 1,
-    AppTuesday   = 2,
-    AppWednesday = 3,
-    AppThursday  = 4,
-    AppFriday    = 5,
-    AppSaturday  = 6
-  } weekDay;
+  AppWeekDayType weekDay;
   uint8_t hour;
   uint8_t minute;
   uint8_t second;
@@ -149,30 +159,50 @@ typedef struct __packed {
   uint8_t minuteOn;
   uint8_t hourOff;
   uint8_t minuteOff;
-  enum __packed {
-    AppInactive = 0,
-    AppActive   = 1
-  } active;
+  AppActiveType active;
 } AppStandbyType;
 
 void AppGetStandby(AppStandbyType *standby);
 void AppSetStandby(const AppStandbyType *standby);
 
 /***********************************************************************************************************************
- * Flash Clock configuration
+ * Flash configuration
  **********************************************************************************************************************/
+// Appointments
+#define APP_APPOINTMENT_MONTH_EVERY   0
+#define APP_APPOINTMENT_DAY_EVERY     0
+#define APP_APPOINTMENT_WEEKDAY_EVERY 7
+typedef struct __packed {
+  AppActiveType active;
+  AppActiveType overlay;
+  uint8_t month;
+  uint8_t day;
+  AppWeekDayType weekDay;
+  uint8_t hour;
+  uint8_t minute;
+  // Seconds should be always zero
+  uint8_t second;
+} AppAppointmentType;
+
+typedef union __packed {
+  // Clock configuration
+  struct __packed {
+    AppMatrixBitmapType matrixBitmap[6];
+  } clockConfig;
+  // Appointment configuration
+  struct __packed {
+    AppMatrixBitmapType matrixBitmap;
+    AppAppointmentType appointment;
+  } appointmentConfig;
+} FlashConfigType;
+
 typedef struct __packed {
   uint16_t pageNumber;
-  AppMatrixBitmapType matrixBitmap[6];
-} AppClockConfigPageType;
+  FlashConfigType config;
+  uint8_t dummy[256 - sizeof(FlashConfigType)];
+} FlashConfigPageType;
 
-void AppSetFlashClockConfig(AppClockConfigPageType *clockConfig);
-
-typedef struct __packed {
-  AppClockConfigPageType clockConfigPage;
-  uint8_t dummy[258 - sizeof(AppClockConfigPageType)];
-} AppClockConfigPageReadType;
-
-void AppGetFlashClockConfig(uint16_t pageNumber, AppClockConfigPageReadType *clockConfig);
+void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config);
+void AppSetFlashConfig(FlashConfigPageType *config);
 
 #endif // APP_H_

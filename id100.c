@@ -59,9 +59,9 @@ int main(void)
   AppGetStandby(&standby);
   PrintBuffer(&standby, sizeof(standby), "Standby: ");
 
-  AppClockConfigPageReadType clockConfig;
-  AppGetFlashClockConfig(14399, &clockConfig);
-  PrintBuffer(&clockConfig, sizeof(clockConfig), "Clock config: ");
+  FlashConfigPageType config;
+  AppGetFlashConfigPage(0, &config);
+  PrintBuffer(&config, sizeof(config), "Config: ");
 
   AppCleanup();
 
