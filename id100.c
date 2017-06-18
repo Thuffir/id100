@@ -40,6 +40,8 @@
 static char *device = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
 // File name for input / output
 static char *filename = NULL;
+// tty to print messages
+FILE *tty;
 
 /***********************************************************************************************************************
  * Save flash config
@@ -56,26 +58,30 @@ static void SaveClockConfig(void)
     }
   }
 
+  // Check if someone is trying to write the config to the terminal
+  if((file == stdout) && isatty(STDOUT_FILENO)) {
+    ExitWithError("Won't write binary data to terminal.");
+  }
+
   AppInit(device);
 
   // Save all pages
   uint16_t page;
   for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
     AppFlashConfigPageType config;
+
+    fprintf(tty, "Saving page %u of %u (%u%%)...\r", page, APP_CLOCK_CONFIG_FLASH_PAGES,
+      (uint32_t)page * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
+    fflush(tty);
+
     // Get Page
     AppGetFlashConfigPage(page, &config);
-    if(file != stdout) {
-      printf("Saving page %u of %u (%u%%)...\r", page, APP_CLOCK_CONFIG_FLASH_PAGES, (uint32_t)page * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
-      fflush(stdout);
-    }
     // Write page
     if(fwrite(&config.config.clockConfig, sizeof(config.config.clockConfig), 1, file) != 1) {
       ExitWithError("Unable to write %u bytes", sizeof(config.config.clockConfig));
     }
   }
-  if(file != stdout) {
-    printf("\n");
-  }
+  fprintf(tty, "\n");
 
   AppCleanup();
 
@@ -92,6 +98,16 @@ static void SaveClockConfig(void)
  **********************************************************************************************************************/
 int main(int numberOfArguments, char *arguments[])
 {
+  // Determine whether to print messages
+  if(isatty(STDOUT_FILENO)) {
+    tty = stdout;
+  }
+  else {
+    if((tty = fopen("/dev/null", "wt")) == NULL) {
+      ExitWithError("Unable to open /dev/null");
+    }
+  }
+
   // This tells us what to do
   enum {
     DoNoting,
@@ -121,7 +137,7 @@ int main(int numberOfArguments, char *arguments[])
       // Bad arguments
       case '?':
       default: {
-        printf("Illegal option: '%c'\n", optopt);
+        fprintf(stderr, "Illegal option: '-%c'\n", optopt);
         whatToDo = DoNoting;
         goto ExitGetOpt;
       }
@@ -141,7 +157,7 @@ int main(int numberOfArguments, char *arguments[])
     default:
     case DoNoting: {
       // Print usage
-      printf(
+      fprintf(stderr,
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
         " -d device     Use device instead of /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0\n"
