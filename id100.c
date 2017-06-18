@@ -32,42 +32,125 @@
  **********************************************************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "app.h"
 #include "utils.h"
 
-int main(void)
+// Device to use
+static char *device = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
+// File name for input / output
+static char *filename = NULL;
+
+/***********************************************************************************************************************
+ * Save flash config
+ **********************************************************************************************************************/
+static void SaveClockConfig(void)
 {
-  AppInit("/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0");
+  // File
+  FILE *file = stdout;
 
-  AppVersionType version;
-  AppGetVersion(&version);
-  PrintBuffer(&version, sizeof(version), "Version: ");
+  // Open file
+  if(filename != NULL) {
+    if((file = fopen(filename, "wb")) == NULL) {
+      ExitWithError("Unable to open file: %s", filename);
+    }
+  }
 
-  AppDateTimeType dateTime;
-  AppGetDateTime(&dateTime);
-  PrintBuffer(&dateTime, sizeof(dateTime), "Date and Time: ");
+  AppInit(device);
 
-  AppIntensityType intensity;
-  AppGetIntensity(&intensity);
-  PrintBuffer(&intensity, sizeof(intensity), "Intensity: ");
-
-  AppLastCalibrationType lastCalibration;
-  AppGetLastCalibration(&lastCalibration);
-  PrintBuffer(&lastCalibration, sizeof(lastCalibration), "Calibration: ");
-
-  AppStandbyType standby;
-  AppGetStandby(&standby);
-  PrintBuffer(&standby, sizeof(standby), "Standby: ");
-
-  FlashConfigPageType config;
-  AppGetFlashConfigPage(14400, &config);
-  PrintBuffer(&config, sizeof(config), "Config: ");
-
-  AppointmentsConfigType appointments;
-  AppGetAppointments(&appointments);
-  PrintBuffer(&appointments, sizeof(appointments), "Appointments: ");
+  // Save all pages
+  uint16_t page;
+  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
+    AppFlashConfigPageType config;
+    // Get Page
+    AppGetFlashConfigPage(page, &config);
+    if(file != stdout) {
+      printf("Saving page %u of %u (%u%%)...\r", page, APP_CLOCK_CONFIG_FLASH_PAGES, (uint32_t)page * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
+      fflush(stdout);
+    }
+    // Write page
+    if(fwrite(&config.config.clockConfig, sizeof(config.config.clockConfig), 1, file) != 1) {
+      ExitWithError("Unable to write %u bytes", sizeof(config.config.clockConfig));
+    }
+  }
+  if(file != stdout) {
+    printf("\n");
+  }
 
   AppCleanup();
+
+  // Close File
+  if(file != stdout) {
+    if(fclose(file) != 0) {
+      ExitWithError("Unable to close file: %s", filename);
+    }
+  }
+}
+
+/***********************************************************************************************************************
+ * Main
+ **********************************************************************************************************************/
+int main(int numberOfArguments, char *arguments[])
+{
+  // This tells us what to do
+  enum {
+    DoNoting,
+    SaveCLockConfig
+  } whatToDo = DoNoting;
+
+  int option;
+  // Check for options
+  opterr = 0;
+  while((option = getopt(numberOfArguments, arguments, "f:cd:")) != -1) {
+    switch(option) {
+      case 'f' : {
+        filename = optarg;
+      }
+      break;
+
+      case 'd' : {
+        device = optarg;
+      }
+      break;
+
+      case 'c' : {
+        whatToDo = SaveCLockConfig;
+      }
+      break;
+
+      // Bad arguments
+      case '?':
+      default: {
+        printf("Illegal option: '%c'\n", optopt);
+        whatToDo = DoNoting;
+        goto ExitGetOpt;
+      }
+      break;
+    }
+  }
+  ExitGetOpt:
+
+  // Decide what to do
+  switch(whatToDo) {
+    case SaveCLockConfig: {
+      SaveClockConfig();
+    }
+    break;
+
+    // Nothign to do
+    default:
+    case DoNoting: {
+      // Print usage
+      printf(
+        "ID100 Utility ("__DATE__" "__TIME__")\n"
+        "Usage:\n"
+        " -d device     Use device instead of /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0\n"
+        " -f filename   Use file for input / output operations instead of STDIN / STDOUT\n"
+        " -c            Save clock configuration\n"
+      );
+    }
+    break;
+  }
 
   return EXIT_SUCCESS;
 }

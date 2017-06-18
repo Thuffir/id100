@@ -168,6 +168,9 @@ void AppSetStandby(const AppStandbyType *standby);
 /***********************************************************************************************************************
  * Flash configuration
  **********************************************************************************************************************/
+// NUmber of flash pages holding the clock configuration
+#define APP_CLOCK_CONFIG_FLASH_PAGES 14400
+
 // Appointments
 #define APP_APPOINTMENT_MONTH_EVERY   0
 #define APP_APPOINTMENT_DAY_EVERY     0
@@ -194,16 +197,17 @@ typedef union __packed {
     AppMatrixBitmapType matrixBitmap;
     AppAppointmentType appointment;
   } appointmentConfig;
-} FlashConfigType;
+} AppFlashConfigType;
 
 typedef struct __packed {
   uint16_t pageNumber;
-  FlashConfigType config;
-  uint8_t dummy[256 - sizeof(FlashConfigType)];
-} FlashConfigPageType;
+  AppFlashConfigType config;
+  uint8_t dummy[256 - sizeof(AppFlashConfigType)];
+} AppFlashConfigPageType;
 
-void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config);
-void AppSetFlashConfig(FlashConfigPageType *config);
+void AppEraseFlashConfigPage(uint16_t pageToErase);
+void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config);
+void AppSetFlashConfig(AppFlashConfigPageType *config);
 
 /***********************************************************************************************************************
  * Appointments

@@ -36,9 +36,6 @@
 #include "utils.h"
 #include "link.h"
 
-// NUmber of flash pages holding the clock configuration
-#define APP_CLOCK_CONFIG_FLASH_PAGES 14400
-
 // Macro to correct endianness (ID100 is Big Endian)
 #if(__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__)
 #define APP_SWAP_ENDIAN_16(num) ((num) = ((num) << 8) | ((num) >> 8))
@@ -207,7 +204,7 @@ void AppSetStandby(const AppStandbyType *standby)
 /***********************************************************************************************************************
  * Get Flash configuration page
  **********************************************************************************************************************/
-void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config)
+void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config)
 {
   APP_SWAP_ENDIAN_16(pageNumber);
   AppSendAndReceive('f', &pageNumber, sizeof(pageNumber), config, sizeof(*config));
@@ -220,16 +217,33 @@ void AppGetFlashConfigPage(uint16_t pageNumber, FlashConfigPageType *config)
 }
 
 /***********************************************************************************************************************
+ * Erase Flash configuration page
+ **********************************************************************************************************************/
+void AppEraseFlashConfigPage(uint16_t pageToErase)
+{
+  uint16_t pageErased;
+
+  APP_SWAP_ENDIAN_16(pageToErase);
+  AppSendAndReceive('E', &pageToErase, sizeof(pageToErase), &pageErased, sizeof(pageErased));
+  APP_SWAP_ENDIAN_16(pageErased);
+  APP_SWAP_ENDIAN_16(pageToErase);
+
+  if(pageErased != pageToErase) {
+    ExitWithError("Bad page number received: %u", pageErased);
+  }
+}
+
+/***********************************************************************************************************************
  * Set Flash configuration
  **********************************************************************************************************************/
-void AppSetFlashConfig(FlashConfigPageType *config)
+void AppSetFlashConfig(AppFlashConfigPageType *config)
 {
   uint16_t pageNumber;
 
   // Check if we are writing clock configuration or appointment data based on page number
   uint16_t size = (config->pageNumber < APP_CLOCK_CONFIG_FLASH_PAGES) ?
-    APP_GET_LENGTH_UNTIL(FlashConfigPageType, config.clockConfig) :
-    APP_GET_LENGTH_UNTIL(FlashConfigPageType, config.appointmentConfig);
+    APP_GET_LENGTH_UNTIL(AppFlashConfigPageType, config.clockConfig) :
+    APP_GET_LENGTH_UNTIL(AppFlashConfigPageType, config.appointmentConfig);
 
   APP_SWAP_ENDIAN_16(config->pageNumber);
   AppSendAndReceive('F', config, size, &pageNumber, sizeof(pageNumber));
