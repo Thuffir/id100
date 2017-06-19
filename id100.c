@@ -39,19 +39,46 @@
 #include "utils.h"
 
 /***********************************************************************************************************************
+ * Open file
+ **********************************************************************************************************************/
+static FILE *OpenFile(char *filename, bool openWrite)
+{
+  // File
+  FILE *file;
+
+  // Open file
+  if(filename != NULL) {
+    if((file = fopen(filename, openWrite ? "wb" : "rb")) == NULL) {
+      ExitWithError("Unable to open file: %s", filename);
+    }
+  }
+  else {
+    file = openWrite ? stdout : stdin;
+  }
+
+  return file;
+}
+
+/***********************************************************************************************************************
+ * Close file
+ **********************************************************************************************************************/
+static void CloseFile(FILE *file)
+{
+  // Close File
+  if((file != stdout) && (file != stdin)) {
+    if(fclose(file) != 0) {
+      ExitWithError("Unable to close file");
+    }
+  }
+}
+
+/***********************************************************************************************************************
  * Save clock config from flash
  **********************************************************************************************************************/
 static void SaveClockConfig(char *filename, char *device, FILE *tty)
 {
-  // File
-  FILE *file = stdout;
-
   // Open file
-  if(filename != NULL) {
-    if((file = fopen(filename, "wb")) == NULL) {
-      ExitWithError("Unable to open file: %s", filename);
-    }
-  }
+  FILE *file = OpenFile(filename, true);
 
   // Check if someone is trying to write the config to the terminal
   if((file == stdout) && isatty(STDOUT_FILENO)) {
@@ -81,11 +108,7 @@ static void SaveClockConfig(char *filename, char *device, FILE *tty)
   AppCleanup();
 
   // Close File
-  if(file != stdout) {
-    if(fclose(file) != 0) {
-      ExitWithError("Unable to close file: %s", filename);
-    }
-  }
+  CloseFile(file);
 }
 
 /***********************************************************************************************************************
@@ -93,15 +116,8 @@ static void SaveClockConfig(char *filename, char *device, FILE *tty)
  **********************************************************************************************************************/
 static void LoadClockConfig(char *filename, char *device, FILE *tty)
 {
-  // File
-  FILE *file = stdin;
-
   // Open file
-  if(filename != NULL) {
-    if((file = fopen(filename, "rb")) == NULL) {
-      ExitWithError("Unable to open file: %s", filename);
-    }
-  }
+  FILE *file = OpenFile(filename, false);
 
   AppInit(device);
 
@@ -127,11 +143,7 @@ static void LoadClockConfig(char *filename, char *device, FILE *tty)
   AppCleanup();
 
   // Close File
-  if(file != stdin) {
-    if(fclose(file) != 0) {
-      ExitWithError("Unable to close file: %s", filename);
-    }
-  }
+  CloseFile(file);
 }
 
 /***********************************************************************************************************************
