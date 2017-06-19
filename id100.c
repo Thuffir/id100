@@ -37,40 +37,7 @@
 #include <stdbool.h>
 #include "app.h"
 #include "utils.h"
-
-/***********************************************************************************************************************
- * Open file
- **********************************************************************************************************************/
-static FILE *OpenFile(char *filename, bool openWrite)
-{
-  // File
-  FILE *file;
-
-  // Open file
-  if(filename != NULL) {
-    if((file = fopen(filename, openWrite ? "wb" : "rb")) == NULL) {
-      ExitWithError("Unable to open file: %s", filename);
-    }
-  }
-  else {
-    file = openWrite ? stdout : stdin;
-  }
-
-  return file;
-}
-
-/***********************************************************************************************************************
- * Close file
- **********************************************************************************************************************/
-static void CloseFile(FILE *file)
-{
-  // Close File
-  if((file != stdout) && (file != stdin)) {
-    if(fclose(file) != 0) {
-      ExitWithError("Unable to close file");
-    }
-  }
-}
+#include "file.h"
 
 /***********************************************************************************************************************
  * Save clock config from flash
@@ -78,17 +45,18 @@ static void CloseFile(FILE *file)
 static void SaveClockConfig(char *filename, char *device, FILE *tty)
 {
   // Open file
-  FILE *file = OpenFile(filename, true);
+  FILE *file = FileOpen(filename, true);
 
   // Check if someone is trying to write the config to the terminal
   if((file == stdout) && isatty(STDOUT_FILENO)) {
     ExitWithError("Won't write binary data to terminal.");
   }
 
+  // Init Device
   AppInit(device);
 
-  // Save all pages
   uint16_t page;
+  // Save all pages
   for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
     AppFlashConfigPageType config;
 
@@ -99,16 +67,14 @@ static void SaveClockConfig(char *filename, char *device, FILE *tty)
     // Get Page
     AppGetFlashConfigPage(page, &config);
     // Write page
-    if(fwrite(&config.config.clockConfig, sizeof(config.config.clockConfig), 1, file) != 1) {
-      ExitWithError("Unable to write %u bytes", sizeof(config.config.clockConfig));
-    }
+    FileWrite(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
   }
   fprintf(tty, "\n");
 
+  // Close device
   AppCleanup();
-
   // Close File
-  CloseFile(file);
+  FileClose(file);
 }
 
 /***********************************************************************************************************************
@@ -117,12 +83,12 @@ static void SaveClockConfig(char *filename, char *device, FILE *tty)
 static void LoadClockConfig(char *filename, char *device, FILE *tty)
 {
   // Open file
-  FILE *file = OpenFile(filename, false);
-
+  FILE *file = FileOpen(filename, false);
+  // Open device
   AppInit(device);
 
-  // Save all pages
   uint16_t page;
+  // Load all pages
   for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
     AppFlashConfigPageType config;
 
@@ -131,11 +97,10 @@ static void LoadClockConfig(char *filename, char *device, FILE *tty)
     fflush(tty);
 
     // Read page
-    if(fread(&config.config.clockConfig, sizeof(config.config.clockConfig), 1, file) != 1) {
-      ExitWithError("Unable to read %u bytes", sizeof(config.config.clockConfig));
-    }
-    // Set page number and write page
+    FileRead(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
+    // Set page number
     config.pageNumber = page;
+    // Write page into device
     AppSetFlashConfig(&config);
   }
   fprintf(tty, "\n");
@@ -143,7 +108,7 @@ static void LoadClockConfig(char *filename, char *device, FILE *tty)
   AppCleanup();
 
   // Close File
-  CloseFile(file);
+  FileClose(file);
 }
 
 /***********************************************************************************************************************

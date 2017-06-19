@@ -10,11 +10,11 @@ Examples
 --------
 
 Read clock configuration from device:
+
     id100 -c > clock_config.bin
-or
     id100 -c -f clock_config.bin
 
 Write clock configuration into device:
+
     id100 -C < clock_config.bin
-or
     id100 -C -f clock_config.bin
