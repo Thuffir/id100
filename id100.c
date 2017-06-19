@@ -38,78 +38,7 @@
 #include "app.h"
 #include "utils.h"
 #include "file.h"
-
-/***********************************************************************************************************************
- * Save clock config from flash
- **********************************************************************************************************************/
-static void SaveClockConfig(char *filename, char *device, FILE *tty)
-{
-  // Open file
-  FILE *file = FileOpen(filename, true);
-
-  // Check if someone is trying to write the config to the terminal
-  if((file == stdout) && isatty(STDOUT_FILENO)) {
-    ExitWithError("Won't write binary data to terminal.");
-  }
-
-  // Init Device
-  AppInit(device);
-
-  uint16_t page;
-  // Save all pages
-  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    AppFlashConfigPageType config;
-
-    fprintf(tty, "Saving page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
-      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
-    fflush(tty);
-
-    // Get Page
-    AppGetFlashConfigPage(page, &config);
-    // Write page
-    FileWrite(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
-  }
-  fprintf(tty, "\n");
-
-  // Close device
-  AppCleanup();
-  // Close File
-  FileClose(file);
-}
-
-/***********************************************************************************************************************
- * Load clock config into flash
- **********************************************************************************************************************/
-static void LoadClockConfig(char *filename, char *device, FILE *tty)
-{
-  // Open file
-  FILE *file = FileOpen(filename, false);
-  // Open device
-  AppInit(device);
-
-  uint16_t page;
-  // Load all pages
-  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    AppFlashConfigPageType config;
-
-    fprintf(tty, "Loading page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
-      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
-    fflush(tty);
-
-    // Read page
-    FileRead(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
-    // Set page number
-    config.pageNumber = page;
-    // Write page into device
-    AppSetFlashConfig(&config);
-  }
-  fprintf(tty, "\n");
-
-  AppCleanup();
-
-  // Close File
-  FileClose(file);
-}
+#include "clock_config.h"
 
 /***********************************************************************************************************************
  * Main
@@ -190,12 +119,12 @@ int main(int numberOfArguments, char *arguments[])
   // Decide what to do
   switch(whatToDo) {
     case SaveCLockConfig: {
-      SaveClockConfig(filename, device, tty);
+      ClockConfigSave(filename, device, tty);
     }
     break;
 
     case LoadCLockConfig: {
-      LoadClockConfig(filename, device, tty);
+      ClockConfigLoad(filename, device, tty);
     }
     break;
 
