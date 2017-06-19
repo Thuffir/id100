@@ -33,15 +33,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include "app.h"
 #include "utils.h"
 
+// Default device
+static const char defaultDevice[] =
+    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
 // Device to use
-static char *device = "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
+static char *device = NULL;
 // File name for input / output
 static char *filename = NULL;
 // tty to print messages
-FILE *tty;
+FILE *tty = NULL;
 
 /***********************************************************************************************************************
  * Save flash config
@@ -98,26 +103,19 @@ static void SaveClockConfig(void)
  **********************************************************************************************************************/
 int main(int numberOfArguments, char *arguments[])
 {
-  // Determine whether to print messages
-  if(isatty(STDOUT_FILENO)) {
-    tty = stdout;
-  }
-  else {
-    if((tty = fopen("/dev/null", "wt")) == NULL) {
-      ExitWithError("Unable to open /dev/null");
-    }
-  }
-
   // This tells us what to do
   enum {
     DoNoting,
     SaveCLockConfig
   } whatToDo = DoNoting;
 
+  bool quiet = false;
+  device = (char *)defaultDevice;
+
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "f:cd:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "f:cd:q")) != -1) {
     switch(option) {
       case 'f' : {
         filename = optarg;
@@ -126,6 +124,11 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'd' : {
         device = optarg;
+      }
+      break;
+
+      case 'q' : {
+        quiet = true;
       }
       break;
 
@@ -146,6 +149,16 @@ int main(int numberOfArguments, char *arguments[])
   }
   ExitGetOpt:
 
+  // Determine whether to print messages or not
+  if(isatty(STDOUT_FILENO) && (quiet == false)) {
+    tty = stdout;
+  }
+  else {
+    if((tty = fopen("/dev/null", "wt")) == NULL) {
+      ExitWithError("Unable to open /dev/null");
+    }
+  }
+
   // Decide what to do
   switch(whatToDo) {
     case SaveCLockConfig: {
@@ -160,9 +173,11 @@ int main(int numberOfArguments, char *arguments[])
       fprintf(stderr,
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
-        " -d device     Use device instead of /dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0\n"
+        " -d device     Use device instead of %s\n"
         " -f filename   Use file for input / output operations instead of STDIN / STDOUT\n"
+        " -q            Be quiet\n"
         " -c            Save clock configuration\n"
+        , defaultDevice
       );
     }
     break;
