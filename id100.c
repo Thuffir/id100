@@ -38,20 +38,10 @@
 #include "app.h"
 #include "utils.h"
 
-// Default device
-static const char defaultDevice[] =
-    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
-// Device to use
-static char *device = NULL;
-// File name for input / output
-static char *filename = NULL;
-// tty to print messages
-FILE *tty = NULL;
-
 /***********************************************************************************************************************
- * Save flash config
+ * Save clock config from flash
  **********************************************************************************************************************/
-static void SaveClockConfig(void)
+static void SaveClockConfig(char *filename, char *device, FILE *tty)
 {
   // File
   FILE *file = stdout;
@@ -75,8 +65,8 @@ static void SaveClockConfig(void)
   for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
     AppFlashConfigPageType config;
 
-    fprintf(tty, "Saving page %u of %u (%u%%)...\r", page, APP_CLOCK_CONFIG_FLASH_PAGES,
-      (uint32_t)page * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
+    fprintf(tty, "Saving page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
+      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
     fflush(tty);
 
     // Get Page
@@ -99,23 +89,79 @@ static void SaveClockConfig(void)
 }
 
 /***********************************************************************************************************************
+ * Load clock config into flash
+ **********************************************************************************************************************/
+static void LoadClockConfig(char *filename, char *device, FILE *tty)
+{
+  // File
+  FILE *file = stdin;
+
+  // Open file
+  if(filename != NULL) {
+    if((file = fopen(filename, "rb")) == NULL) {
+      ExitWithError("Unable to open file: %s", filename);
+    }
+  }
+
+  AppInit(device);
+
+  // Save all pages
+  uint16_t page;
+  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
+    AppFlashConfigPageType config;
+
+    fprintf(tty, "Loading page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
+      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
+    fflush(tty);
+
+    // Read page
+    if(fread(&config.config.clockConfig, sizeof(config.config.clockConfig), 1, file) != 1) {
+      ExitWithError("Unable to read %u bytes", sizeof(config.config.clockConfig));
+    }
+    // Set page number and write page
+    config.pageNumber = page;
+    AppSetFlashConfig(&config);
+  }
+  fprintf(tty, "\n");
+
+  AppCleanup();
+
+  // Close File
+  if(file != stdin) {
+    if(fclose(file) != 0) {
+      ExitWithError("Unable to close file: %s", filename);
+    }
+  }
+}
+
+/***********************************************************************************************************************
  * Main
  **********************************************************************************************************************/
 int main(int numberOfArguments, char *arguments[])
 {
+  // Default device
+  static const char defaultDevice[] =
+      "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_MECIDDVULMNCDVMP-if00-port0";
+  // Device to use
+  char *device = (char *)defaultDevice;
+  // File name for input / output
+  char *filename = NULL;
+  // tty to print messages
+  FILE *tty = NULL;
+
   // This tells us what to do
   enum {
     DoNoting,
-    SaveCLockConfig
+    SaveCLockConfig,
+    LoadCLockConfig
   } whatToDo = DoNoting;
 
   bool quiet = false;
-  device = (char *)defaultDevice;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "f:cd:q")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "f:cCd:q")) != -1) {
     switch(option) {
       case 'f' : {
         filename = optarg;
@@ -134,6 +180,11 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'c' : {
         whatToDo = SaveCLockConfig;
+      }
+      break;
+
+      case 'C' : {
+        whatToDo = LoadCLockConfig;
       }
       break;
 
@@ -162,7 +213,12 @@ int main(int numberOfArguments, char *arguments[])
   // Decide what to do
   switch(whatToDo) {
     case SaveCLockConfig: {
-      SaveClockConfig();
+      SaveClockConfig(filename, device, tty);
+    }
+    break;
+
+    case LoadCLockConfig: {
+      LoadClockConfig(filename, device, tty);
     }
     break;
 
@@ -176,7 +232,8 @@ int main(int numberOfArguments, char *arguments[])
         " -d device     Use device instead of %s\n"
         " -f filename   Use file for input / output operations instead of STDIN / STDOUT\n"
         " -q            Be quiet\n"
-        " -c            Save clock configuration\n"
+        " -c            Save clock configuration from device\n"
+        " -C            Load clock configuration into device\n"
         , defaultDevice
       );
     }
