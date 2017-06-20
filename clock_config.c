@@ -40,6 +40,7 @@
 #include "utils.h"
 #include "file.h"
 #include "clock_config.h"
+#include "bitmap.h"
 
 /***********************************************************************************************************************
  * Save clock config from flash
@@ -112,3 +113,44 @@ void ClockConfigLoad(char *filename, char *device, FILE *tty)
   // Close File
   FileClose(file);
 }
+
+/***********************************************************************************************************************
+ * Print clock configuration as ASCII
+ **********************************************************************************************************************/
+void ClockConfigPrint(char *device)
+{
+  // Init Device
+  AppInit(device);
+
+  uint32_t abssecond = 0;
+  uint16_t page;
+  // All pages
+  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
+    uint8_t pagesec;
+    AppFlashConfigPageType config;
+    // Get Page
+    AppGetFlashConfigPage(page, &config);
+
+    // One page holds multiple clock configs
+    for(pagesec = 0;
+        pagesec < (sizeof(config.config.clockConfig.matrixBitmap) / sizeof(config.config.clockConfig.matrixBitmap[0]));
+        pagesec++) {
+
+      // Calculate time
+      uint8_t hour   = abssecond / (60 * 60);
+      uint8_t minute = (abssecond / 60) % 60;
+      uint8_t second = abssecond % 60;
+
+      // Print header
+      printf("# %02u:%02u:%02u (%u,%u)\n", hour, minute, second, page + 1, pagesec + 1);
+      // Print bitmap
+      BitmapPrint(config.config.clockConfig.matrixBitmap[pagesec]);
+
+      abssecond++;
+    }
+  }
+
+  // Close device
+  AppCleanup();
+}
+

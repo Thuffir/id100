@@ -59,7 +59,8 @@ int main(int numberOfArguments, char *arguments[])
   enum {
     DoNoting,
     SaveCLockConfig,
-    LoadCLockConfig
+    LoadCLockConfig,
+    PrintCLockConfig
   } whatToDo = DoNoting;
 
   bool quiet = false;
@@ -67,7 +68,7 @@ int main(int numberOfArguments, char *arguments[])
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "f:cCd:q")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "f:cCd:qp")) != -1) {
     switch(option) {
       case 'f' : {
         filename = optarg;
@@ -91,6 +92,11 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'C' : {
         whatToDo = LoadCLockConfig;
+      }
+      break;
+
+      case 'p' : {
+        whatToDo = PrintCLockConfig;
       }
       break;
 
@@ -128,6 +134,11 @@ int main(int numberOfArguments, char *arguments[])
     }
     break;
 
+    case PrintCLockConfig: {
+      ClockConfigPrint(device);
+    }
+    break;
+
     // Nothign to do
     default:
     case DoNoting: {
@@ -140,6 +151,7 @@ int main(int numberOfArguments, char *arguments[])
         " -q            Be quiet\n"
         " -c            Save clock configuration from device\n"
         " -C            Load clock configuration into device\n"
+        " -p            Print clock configuration as ASCII\n"
         , defaultDevice
       );
     }

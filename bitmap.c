@@ -36,7 +36,7 @@
 /***********************************************************************************************************************
  * Print a bitmap as ACII
  **********************************************************************************************************************/
-void BitmapPrint(AppMatrixBitmapType bitmap, FILE *tty)
+void BitmapPrint(AppMatrixBitmapType bitmap)
 {
   int row, column;
 
@@ -58,6 +58,6 @@ void BitmapPrint(AppMatrixBitmapType bitmap, FILE *tty)
       }
     }
     // Print line
-    fprintf(tty, "%s\n", line);
+    puts(line);
   }
 }

@@ -38,5 +38,6 @@
 
 void ClockConfigSave(char *filename, char *device, FILE *tty);
 void ClockConfigLoad(char *filename, char *device, FILE *tty);
+void ClockConfigPrint(char *device);
 
 #endif // CLOCK_CONFIG_H_
