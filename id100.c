@@ -54,6 +54,7 @@ int main(int numberOfArguments, char *arguments[])
   char *filename = NULL;
   // tty to print messages
   FILE *tty = NULL;
+  char *timestamp = NULL;
 
   // This tells us what to do
   enum {
@@ -68,13 +69,8 @@ int main(int numberOfArguments, char *arguments[])
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "f:cCd:qp")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "c::C::d:qp::")) != -1) {
     switch(option) {
-      case 'f' : {
-        filename = optarg;
-      }
-      break;
-
       case 'd' : {
         device = optarg;
       }
@@ -87,15 +83,18 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'c' : {
         whatToDo = SaveCLockConfig;
+        filename = optarg;
       }
       break;
 
       case 'C' : {
         whatToDo = LoadCLockConfig;
+        filename = optarg;
       }
       break;
 
       case 'p' : {
+        timestamp = optarg;
         whatToDo = PrintCLockConfig;
       }
       break;
@@ -135,7 +134,12 @@ int main(int numberOfArguments, char *arguments[])
     break;
 
     case PrintCLockConfig: {
-      ClockConfigPrint(device);
+      if(timestamp == NULL) {
+        ClockConfigPrintAll(device);
+      }
+      else {
+        ClockConfigPrint(device, timestamp);
+      }
     }
     break;
 
@@ -146,12 +150,11 @@ int main(int numberOfArguments, char *arguments[])
       fprintf(stderr,
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
-        " -d device     Use device instead of %s\n"
-        " -f filename   Use file for input / output operations instead of STDIN / STDOUT\n"
+        " -ddevice      Use device instead of %s\n"
         " -q            Be quiet\n"
-        " -c            Save clock configuration from device\n"
-        " -C            Load clock configuration into device\n"
-        " -p            Print clock configuration as ASCII\n"
+        " -c[file]      Save clock configuration from device to file or stdout\n"
+        " -C[file]      Load clock configuration into device from file or stdin\n"
+        " -p[hh:mm:ss]  Print clock configuration as ASCII for a given time\n"
         , defaultDevice
       );
     }

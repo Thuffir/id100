@@ -117,7 +117,7 @@ void ClockConfigLoad(char *filename, char *device, FILE *tty)
 /***********************************************************************************************************************
  * Print clock configuration as ASCII
  **********************************************************************************************************************/
-void ClockConfigPrint(char *device)
+void ClockConfigPrintAll(char *device)
 {
   // Init Device
   AppInit(device);
@@ -151,6 +151,31 @@ void ClockConfigPrint(char *device)
   }
 
   // Close device
+  AppCleanup();
+}
+
+/***********************************************************************************************************************
+ * Print a specific time clock configuration as ASCII
+ **********************************************************************************************************************/
+void ClockConfigPrint(char *device, char *timestamp)
+{
+  unsigned int hour, minute, second;
+
+  // Parse time
+  if((sscanf(timestamp, "%u:%u:%u", &hour, &minute, &second) != 3) || (hour > 23) || (minute > 59) || second > 59) {
+    ExitWithError("Invalid timestamp: %s", timestamp);
+  }
+
+  // Calculate address information
+  uint32_t abssecond = (hour * 60 * 60) + (minute * 60) + second;
+  uint16_t page = abssecond / 6;
+  uint8_t pagesec = abssecond % 6;
+
+  // Read and print config
+  AppInit(device);
+  AppFlashConfigPageType config;
+  AppGetFlashConfigPage(page, &config);
+  BitmapPrint(config.config.clockConfig.matrixBitmap[pagesec]);
   AppCleanup();
 }
 
