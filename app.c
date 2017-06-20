@@ -271,3 +271,31 @@ void AppSetAppointments(const AppointmentsConfigType *appointments)
   AppSendAndReceive('R', appointments, sizeof(*appointments), NULL, 0);
 }
 
+/***********************************************************************************************************************
+ * Get one dot from the bitmap matrix
+ **********************************************************************************************************************/
+AppMatrixDotType AppGetMatrixBitmapDot(AppMatrixBitmapType bitmap, uint8_t row, uint8_t column)
+{
+  // Calculate dot number
+  uint8_t dotnum = (column * APP_MATRIX_ROWS) + row;
+
+  return((bitmap[dotnum / 8] & (0x80 >> (dotnum % 8))) ? AppMatrixDotSet : AppMatrixDotClear);
+}
+
+/***********************************************************************************************************************
+ * Set one dot in the bitmap matrix
+ **********************************************************************************************************************/
+void AppSetMatrixBitmapDot(AppMatrixBitmapType bitmap, AppMatrixDotType dot, uint8_t row, uint8_t column)
+{
+  // Calculate dot number
+  uint8_t dotnum = (column * APP_MATRIX_ROWS) + row;
+
+  // Set dot
+  if(dot == AppMatrixDotSet) {
+    bitmap[dotnum / 8] |=  (0x80 >> (dotnum % 8));
+  }
+  // Clear dot
+  else {
+    bitmap[dotnum / 8] &= ~(0x80 >> (dotnum % 8));
+  }
+}
