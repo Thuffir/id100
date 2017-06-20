@@ -31,12 +31,16 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <string.h>
 #include "bitmap.h"
+#include "utils.h"
+
+#define BITMAP_SPACE_CHAR ' '
 
 /***********************************************************************************************************************
- * Print a bitmap as ACII
+ * Print a bitmap as ACII to stdout
  **********************************************************************************************************************/
-void BitmapPrint(AppMatrixBitmapType bitmap)
+void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
 {
   int row, column;
 
@@ -45,19 +49,48 @@ void BitmapPrint(AppMatrixBitmapType bitmap)
     char line[(APP_MATRIX_COLS * 2)];
     // Format line
     for(column = 0; column < APP_MATRIX_COLS; column++) {
-      line[column * 2] = (AppGetMatrixBitmapDot(bitmap, row, column) == AppMatrixDotSet) ? '*' : ' ';
-      line[(column * 2) + 1] = ' ';
+      line[column * 2] =
+          (AppGetMatrixBitmapDot(bitmap, row, column) == AppMatrixDotSet) ? dotchar : BITMAP_SPACE_CHAR;
+      line[(column * 2) + 1] = BITMAP_SPACE_CHAR;
     }
     // Remove trailing spaces
     for(column = sizeof(line) - 1; column >= 0; column--) {
-      if(line[column] == ' ') {
-        line[column] = 0;
+      if(line[column] == BITMAP_SPACE_CHAR) {
+        line[column] = '\0';
       }
       else {
         break;
       }
     }
     // Print line
-    puts(line);
+    fprintf(file, "%s\n", line);
+  }
+}
+
+/***********************************************************************************************************************
+ * Read an ASCII picture from stdin and make a bitmap out of it
+ **********************************************************************************************************************/
+void BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
+{
+  uint8_t row, column;
+
+  // Make bitmap empty
+  memset(bitmap, 0, sizeof(AppMatrixBitmapType));
+
+  // For each row,
+  for(row = 0; row < APP_MATRIX_ROWS; row++) {
+    char line[(APP_MATRIX_COLS * 2) + 1];
+    // Read line
+    if(fgets(line, sizeof(line), file) == NULL) {
+      ExitWithError("Invalid input");
+    }
+    // Parse line
+    for(column = 0;
+        (column < sizeof(line)) && (line[column] != '\0') && (line[column] != '\n');
+        column++) {
+      if(((column % 2) == 0) && (line[column] == dotchar)) {
+        AppSetMatrixBitmapDot(bitmap, AppMatrixDotSet, row, column / 2);
+      }
+    }
   }
 }

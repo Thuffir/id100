@@ -31,6 +31,7 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <unistd.h>
 #include "file.h"
 #include "utils.h"
 
@@ -85,5 +86,16 @@ void FileRead(FILE *file, void *buffer, size_t length)
 {
   if(fread(buffer, length, 1, file) != 1) {
     ExitWithError("Unable to read %u bytes", length);
+  }
+}
+
+/***********************************************************************************************************************
+ * Check if someone is trying to use the terminal for binary data
+ **********************************************************************************************************************/
+void FileCheckBinaryTerminal(FILE *file)
+{
+  // Check if someone is trying to write the config to the terminal
+  if(isatty(fileno(file))) {
+    ExitWithError("Won't use terminal for binary data");
   }
 }

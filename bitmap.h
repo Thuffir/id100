@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include "app.h"
 
-void BitmapPrint(AppMatrixBitmapType bitmap);
+void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar);
+void BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar);
 
 #endif // BITMAP_H_

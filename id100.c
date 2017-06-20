@@ -54,14 +54,18 @@ int main(int numberOfArguments, char *arguments[])
   char *filename = NULL;
   // tty to print messages
   FILE *tty = NULL;
+  // Time stamp
   char *timestamp = NULL;
+  // Dot character for ASCII pictures
+  char dotchar = '#';
 
   // This tells us what to do
   enum {
     DoNoting,
     SaveCLockConfig,
     LoadCLockConfig,
-    PrintCLockConfig
+    PrintCLockConfig,
+    SetDisplay
   } whatToDo = DoNoting;
 
   bool quiet = false;
@@ -69,10 +73,15 @@ int main(int numberOfArguments, char *arguments[])
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "c::C::d:qp::")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "cCd:f:qp::s")) != -1) {
     switch(option) {
       case 'd' : {
         device = optarg;
+      }
+      break;
+
+      case 'f' : {
+        filename = optarg;
       }
       break;
 
@@ -83,19 +92,22 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'c' : {
         whatToDo = SaveCLockConfig;
-        filename = optarg;
       }
       break;
 
       case 'C' : {
         whatToDo = LoadCLockConfig;
-        filename = optarg;
       }
       break;
 
       case 'p' : {
         timestamp = optarg;
         whatToDo = PrintCLockConfig;
+      }
+      break;
+
+      case 's' : {
+        whatToDo = SetDisplay;
       }
       break;
 
@@ -124,22 +136,26 @@ int main(int numberOfArguments, char *arguments[])
   // Decide what to do
   switch(whatToDo) {
     case SaveCLockConfig: {
-      ClockConfigSave(filename, device, tty);
+      ClockConfigSaveAll(filename, device, tty);
     }
     break;
 
     case LoadCLockConfig: {
-      ClockConfigLoad(filename, device, tty);
+      ClockConfigLoadAll(filename, device, tty);
     }
     break;
 
     case PrintCLockConfig: {
       if(timestamp == NULL) {
-        ClockConfigPrintAll(device);
+        ClockConfigPrintAll(filename, device, dotchar);
       }
       else {
-        ClockConfigPrint(device, timestamp);
+        ClockConfigPrint(filename, device, timestamp, dotchar);
       }
+    }
+    break;
+
+    case SetDisplay: {
     }
     break;
 
@@ -151,10 +167,12 @@ int main(int numberOfArguments, char *arguments[])
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
         " -ddevice      Use device instead of %s\n"
+        " -ffile        Use filename for input / output\n"
         " -q            Be quiet\n"
-        " -c[file]      Save clock configuration from device to file or stdout\n"
-        " -C[file]      Load clock configuration into device from file or stdin\n"
+        " -c            Save clock configuration from device\n"
+        " -C            Load clock configuration into device\n"
         " -p[hh:mm:ss]  Print clock configuration as ASCII for a given time\n"
+        " -s            Set display contents\n"
         , defaultDevice
       );
     }

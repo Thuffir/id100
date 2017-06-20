@@ -12,9 +12,9 @@ Examples
 Read clock configuration from device:
 
     id100 -c > clock_config.bin
-    id100 -cclock_config.bin
+    id100 -c -fclock_config.bin
 
 Write clock configuration into device:
 
     id100 -C < clock_config.bin
-    id100 -Cclock_config.bin
+    id100 -C -fclock_config.bin

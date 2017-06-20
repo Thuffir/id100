@@ -41,5 +41,6 @@ FILE *FileOpen(char *filename, bool openWrite);
 void FileClose(FILE *file);
 void FileWrite(FILE *file, void *buffer, size_t length);
 void FileRead(FILE *file, void *buffer, size_t length);
+void FileCheckBinaryTerminal(FILE *file);
 
 #endif // FILE_H_
