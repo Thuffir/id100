@@ -42,165 +42,89 @@
 #include "bitmap.h"
 
 /***********************************************************************************************************************
- * Convert time string to page and page second address
+ * Parse time string to absolute seconds
  **********************************************************************************************************************/
-static void ClockConfigTimeToPage(char *timestamp, uint16_t *page, uint8_t *pagesec)
+static void ClockConfigParseTime(char *timestamp, uint32_t *fromAbsSec, uint32_t *toAbsSec)
 {
-  unsigned int hour, minute, second;
+  unsigned int fromHour, fromMinute, fromSecond, toHour, toMinute, toSecond;
 
-  // Parse time
-  if((sscanf(timestamp, "%u:%u:%u", &hour, &minute, &second) != 3) || (hour > 23) || (minute > 59) || second > 59) {
-    ExitWithError("Invalid timestamp: %s", timestamp);
-  }
-
-  // Calculate address information
-  uint32_t abssecond = (hour * 60 * 60) + (minute * 60) + second;
-  *page = abssecond / 6;
-  *pagesec = abssecond % 6;
-}
-
-/***********************************************************************************************************************
- * Save clock config from flash
- **********************************************************************************************************************/
-void ClockConfigSaveAll(char *filename, char *device, FILE *tty)
-{
-  // Open file
-  FILE *file = FileOpen(filename, true);
-
-  // Check if someone is trying to write the config to the terminal
-  FileCheckBinaryTerminal(file);
-
-  // Init Device
-  AppInit(device);
-
-  uint16_t page;
-  // Save all pages
-  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    AppFlashConfigPageType config;
-
-    fprintf(tty, "Saving page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
-      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
-    fflush(tty);
-
-    // Get Page
-    AppGetFlashConfigPage(page, &config);
-    // Write page
-    FileWrite(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
-  }
-  fprintf(tty, "\n");
-
-  // Close device
-  AppCleanup();
-  // Close File
-  FileClose(file);
-}
-
-/***********************************************************************************************************************
- * Load clock config into flash
- **********************************************************************************************************************/
-void ClockConfigLoadAll(char *filename, char *device, FILE *tty)
-{
-  // Open file
-  FILE *file = FileOpen(filename, false);
-
-  // Check if someone is trying to read the config from the terminal
-  FileCheckBinaryTerminal(file);
-
-  // Open device
-  AppInit(device);
-
-  uint16_t page;
-  // Load all pages
-  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    AppFlashConfigPageType config;
-
-    fprintf(tty, "Loading page %u of %u (%u%%)...\r", page + 1, APP_CLOCK_CONFIG_FLASH_PAGES,
-      ((uint32_t)page + 1) * 100 / APP_CLOCK_CONFIG_FLASH_PAGES);
-    fflush(tty);
-
-    // Read page
-    FileRead(file, &config.config.clockConfig, sizeof(config.config.clockConfig));
-    // Set page number
-    config.pageNumber = page;
-    // Write page into device
-    AppSetFlashConfig(&config);
-  }
-  fprintf(tty, "\n");
-
-  AppCleanup();
-
-  // Close File
-  FileClose(file);
-}
-
-/***********************************************************************************************************************
- * Print clock configuration as ASCII
- **********************************************************************************************************************/
-void ClockConfigPrintAll(char *filename, char *device, char dotchar)
-{
-  // Open file
-  FILE *file = FileOpen(filename, true);
-
-  // Init Device
-  AppInit(device);
-
-  uint32_t abssecond = 0;
-  uint16_t page;
-  // All pages
-  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    uint8_t pagesec;
-    AppFlashConfigPageType config;
-    // Get Page
-    AppGetFlashConfigPage(page, &config);
-
-    // One page holds multiple clock configs
-    for(pagesec = 0;
-        pagesec < (sizeof(config.config.clockConfig.matrixBitmap) / sizeof(config.config.clockConfig.matrixBitmap[0]));
-        pagesec++) {
-
-      // Calculate time
-      uint8_t hour   = abssecond / (60 * 60);
-      uint8_t minute = (abssecond / 60) % 60;
-      uint8_t second = abssecond % 60;
-
-      // Print header
-      fprintf(file, "# %02u:%02u:%02u (%u,%u)\n", hour, minute, second, page + 1, pagesec + 1);
-      // Print bitmap
-      BitmapPrint(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar);
-
-      abssecond++;
+  // Parse time, try with from - to
+  if(sscanf(timestamp, "%u:%u:%u-%u:%u:%u", &fromHour, &fromMinute, &fromSecond, &toHour, &toMinute, &toSecond) != 6) {
+    // If fails try with exact time
+    if(sscanf(timestamp, "%u:%u:%u", &fromHour, &fromMinute, &fromSecond) != 3) {
+      // Error if it also fails
+      ExitWithError("Invalid timestamp: %s", timestamp);
+    }
+    else {
+      // Exact time, make end time equal to start time
+      toHour = fromHour;
+      toMinute = fromMinute;
+      toSecond = fromSecond;
     }
   }
 
-  // Close device
-  AppCleanup();
+  // Calculate absolte seconds
+  *fromAbsSec = (fromHour * 60 * 60) + (fromMinute * 60) + fromSecond;
+  *toAbsSec = (toHour * 60 * 60) + (toMinute * 60) + toSecond;
 
-  // Close File
-  FileClose(file);
+  // Check if we are in bounds
+  if((*fromAbsSec >= (60 * 60 *24)) || (*toAbsSec >= (60 * 60 *24))) {
+    ExitWithError("Invalid timestamp");
+  }
 }
 
 /***********************************************************************************************************************
  * Print a specific time clock configuration as ASCII
  **********************************************************************************************************************/
-void ClockConfigPrint(char *filename, char *device, char *timestamp, char dotchar)
+void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar, char commentchar)
 {
-  uint16_t page;
-  uint8_t pagesec;
+  uint32_t secIdx, to;
 
   // Convert timestamp to page information
-  ClockConfigTimeToPage(timestamp, &page, &pagesec);
+  ClockConfigParseTime(timestamp, &secIdx, &to);
 
   // Open file
   FILE *file = FileOpen(filename, true);
 
+  // Check if we are writing binary data
+  if(dotchar == 0) {
+    FileCheckBinaryTerminal(file);
+  }
+
   // Read and print config
   AppInit(device);
-  AppFlashConfigPageType config;
-  AppGetFlashConfigPage(page, &config);
-  BitmapPrint(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar);
+
+  uint16_t oldPage = -1;
+  for(; secIdx <= to; secIdx++) {
+    AppFlashConfigPageType config;
+    uint16_t page = secIdx / APP_CLOCK_CONFIG_PER_PAGES;
+    uint8_t pageSec = secIdx % APP_CLOCK_CONFIG_PER_PAGES;
+
+    // Load page if necessary
+    if(page != oldPage) {
+      AppGetFlashConfigPage(page, &config);
+      oldPage = page;
+    }
+
+    // Check if we are writing binary data
+    if(dotchar == 0) {
+      FileWrite(file,
+        config.config.clockConfig.matrixBitmap[pageSec], sizeof(config.config.clockConfig.matrixBitmap[pageSec]));
+    }
+    else {
+      // Calculate time
+      uint8_t hour   = secIdx / (60 * 60);
+      uint8_t minute = (secIdx / 60) % 60;
+      uint8_t second = secIdx % 60;
+      // Print header
+      fprintf(file, "%c %02u:%02u:%02u %u,%u\n", commentchar, hour, minute, second, page, pageSec);
+      // Print Config
+      BitmapPrint(file, config.config.clockConfig.matrixBitmap[pageSec], dotchar);
+    }
+  }
+
   AppCleanup();
 
   // Close File
   FileClose(file);
 }
-

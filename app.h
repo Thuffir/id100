@@ -179,6 +179,8 @@ void AppSetStandby(const AppStandbyType *standby);
  **********************************************************************************************************************/
 // NUmber of flash pages holding the clock configuration
 #define APP_CLOCK_CONFIG_FLASH_PAGES 14400
+// Number of clock configurations per flash pages
+#define APP_CLOCK_CONFIG_PER_PAGES 6
 
 // Appointments
 #define APP_APPOINTMENT_MONTH_EVERY   0
@@ -199,7 +201,7 @@ typedef struct __packed {
 typedef union __packed {
   // Clock configuration
   struct __packed {
-    AppMatrixBitmapType matrixBitmap[6];
+    AppMatrixBitmapType matrixBitmap[APP_CLOCK_CONFIG_PER_PAGES];
   } clockConfig;
   // Appointment configuration
   struct __packed {

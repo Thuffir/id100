@@ -36,9 +36,6 @@
 
 #include <stdio.h>
 
-void ClockConfigSaveAll(char *filename, char *device, FILE *tty);
-void ClockConfigLoadAll(char *filename, char *device, FILE *tty);
-void ClockConfigPrintAll(char *filename, char *device, char dotchar);
-void ClockConfigPrint(char *filename, char *device, char *timestamp, char dotchar);
+void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar, char commentchar);
 
 #endif // CLOCK_CONFIG_H_

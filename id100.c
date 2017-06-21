@@ -52,29 +52,31 @@ int main(int numberOfArguments, char *arguments[])
   char *device = (char *)defaultDevice;
   // File name for input / output
   char *filename = NULL;
-  // tty to print messages
-  FILE *tty = NULL;
   // Time stamp
-  char *timestamp = NULL;
+  char *timestamp = "00:00:00-23:59:59";
   // Dot character for ASCII pictures
   char dotchar = '#';
+  // Comment character
+  char commentchar = ':';
 
   // This tells us what to do
   enum {
     DoNoting,
-    SaveCLockConfig,
-    LoadCLockConfig,
-    PrintCLockConfig,
+    ReadClockConfig,
+    WriteClockConfig,
     SetDisplay
   } whatToDo = DoNoting;
-
-  bool quiet = false;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "cCd:f:qp::s")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "bcCd:f:st:")) != -1) {
     switch(option) {
+      case 'b' : {
+        dotchar = 0;
+      }
+      break;
+
       case 'd' : {
         device = optarg;
       }
@@ -85,28 +87,22 @@ int main(int numberOfArguments, char *arguments[])
       }
       break;
 
-      case 'q' : {
-        quiet = true;
+      case 't' : {
+        timestamp = optarg;
       }
       break;
 
       case 'c' : {
-        whatToDo = SaveCLockConfig;
+        whatToDo = ReadClockConfig;
       }
       break;
 
       case 'C' : {
-        whatToDo = LoadCLockConfig;
+        whatToDo = WriteClockConfig;
       }
       break;
 
-      case 'p' : {
-        timestamp = optarg;
-        whatToDo = PrintCLockConfig;
-      }
-      break;
-
-      case 's' : {
+        case 's' : {
         whatToDo = SetDisplay;
       }
       break;
@@ -123,35 +119,14 @@ int main(int numberOfArguments, char *arguments[])
   }
   ExitGetOpt:
 
-  // Determine whether to print messages or not
-  if(isatty(STDOUT_FILENO) && (quiet == false)) {
-    tty = stdout;
-  }
-  else {
-    if((tty = fopen("/dev/null", "wt")) == NULL) {
-      ExitWithError("Unable to open /dev/null");
-    }
-  }
-
   // Decide what to do
   switch(whatToDo) {
-    case SaveCLockConfig: {
-      ClockConfigSaveAll(filename, device, tty);
+    case ReadClockConfig: {
+      ClockConfigRead(filename, device, timestamp, dotchar, commentchar);
     }
     break;
 
-    case LoadCLockConfig: {
-      ClockConfigLoadAll(filename, device, tty);
-    }
-    break;
-
-    case PrintCLockConfig: {
-      if(timestamp == NULL) {
-        ClockConfigPrintAll(filename, device, dotchar);
-      }
-      else {
-        ClockConfigPrint(filename, device, timestamp, dotchar);
-      }
+    case WriteClockConfig: {
     }
     break;
 
@@ -166,13 +141,12 @@ int main(int numberOfArguments, char *arguments[])
       fprintf(stderr,
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
-        " -ddevice      Use device instead of %s\n"
-        " -ffile        Use filename for input / output\n"
-        " -q            Be quiet\n"
-        " -c            Save clock configuration from device\n"
-        " -C            Load clock configuration into device\n"
-        " -p[hh:mm:ss]  Print clock configuration as ASCII for a given time\n"
-        " -s            Set display contents\n"
+        " -d device               Use device instead of %s\n"
+        " -f file                 Use filename for input / output\n"
+        " -t hh:mm:ss[-hh:mm:ss]  Specify time or time range\n"
+        " -c                      Read clock configuration from device\n"
+//        " -C                      Write clock configuration into device\n"
+//        " -s                      Set display contents\n"
         , defaultDevice
       );
     }
