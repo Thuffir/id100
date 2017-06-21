@@ -37,5 +37,6 @@
 #include <stdio.h>
 
 void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar, char commentchar);
+void ClockConfigWrite(char *filename, char *device, char dotchar, char commentchar);
 
 #endif // CLOCK_CONFIG_H_

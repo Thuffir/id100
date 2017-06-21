@@ -217,18 +217,18 @@ void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config)
 }
 
 /***********************************************************************************************************************
- * Erase Flash configuration page
+ * Erase Flash configuration sector
  **********************************************************************************************************************/
-void AppEraseFlashConfigPage(uint16_t pageToErase)
+void AppEraseFlashConfigSector(uint16_t startPage)
 {
   uint16_t pageErased;
 
-  APP_SWAP_ENDIAN_16(pageToErase);
-  AppSendAndReceive('E', &pageToErase, sizeof(pageToErase), &pageErased, sizeof(pageErased));
+  APP_SWAP_ENDIAN_16(startPage);
+  AppSendAndReceive('E', &startPage, sizeof(startPage), &pageErased, sizeof(pageErased));
   APP_SWAP_ENDIAN_16(pageErased);
-  APP_SWAP_ENDIAN_16(pageToErase);
+  APP_SWAP_ENDIAN_16(startPage);
 
-  if(pageErased != pageToErase) {
+  if(pageErased != startPage) {
     ExitWithError("Bad page number received: %u", pageErased);
   }
 }

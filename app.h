@@ -216,9 +216,13 @@ typedef struct __packed {
   uint8_t dummy[256 - sizeof(AppFlashConfigType)];
 } AppFlashConfigPageType;
 
-void AppEraseFlashConfigPage(uint16_t pageToErase);
 void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config);
 void AppSetFlashConfig(AppFlashConfigPageType *config);
+
+// Number of pages per sector (erase unit, 16 * 256 = 4k)
+#define APP_FLASH_PAGES_PER_SECTOR  16
+
+void AppEraseFlashConfigSector(uint16_t startPage);
 
 /***********************************************************************************************************************
  * Appointments

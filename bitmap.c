@@ -36,6 +36,7 @@
 #include "utils.h"
 
 #define BITMAP_SPACE_CHAR ' '
+#define BITMAP_MAX_LINE_LENGTH 256
 
 /***********************************************************************************************************************
  * Print a bitmap as ACII to stdout
@@ -70,7 +71,7 @@ void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
 /***********************************************************************************************************************
  * Read an ASCII picture from stdin and make a bitmap out of it
  **********************************************************************************************************************/
-void BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
+void BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar)
 {
   uint8_t row, column;
 
@@ -79,11 +80,15 @@ void BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
 
   // For each row,
   for(row = 0; row < APP_MATRIX_ROWS; row++) {
-    char line[(APP_MATRIX_COLS * 2) + 1];
-    // Read line
-    if(fgets(line, sizeof(line), file) == NULL) {
-      ExitWithError("Invalid input");
-    }
+    char line[BITMAP_MAX_LINE_LENGTH];
+
+    // Read line, but ignore comments
+    do {
+      if(fgets(line, sizeof(line), file) == NULL) {
+        ExitWithError("Invalid input");
+      }
+    } while(line[0] == commentchar);
+
     // Parse line
     for(column = 0;
         (column < sizeof(line)) && (line[column] != '\0') && (line[column] != '\n');

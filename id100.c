@@ -127,6 +127,7 @@ int main(int numberOfArguments, char *arguments[])
     break;
 
     case WriteClockConfig: {
+      ClockConfigWrite(filename, device, dotchar, commentchar);
     }
     break;
 
@@ -145,7 +146,7 @@ int main(int numberOfArguments, char *arguments[])
         " -f file                 Use filename for input / output\n"
         " -t hh:mm:ss[-hh:mm:ss]  Specify time or time range\n"
         " -c                      Read clock configuration from device\n"
-//        " -C                      Write clock configuration into device\n"
+        " -C                      Write clock configuration into device\n"
 //        " -s                      Set display contents\n"
         , defaultDevice
       );

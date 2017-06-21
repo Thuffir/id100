@@ -74,7 +74,7 @@ static void ClockConfigParseTime(char *timestamp, uint32_t *fromAbsSec, uint32_t
 }
 
 /***********************************************************************************************************************
- * Print a specific time clock configuration as ASCII
+ * Read Clock Configuration from device
  **********************************************************************************************************************/
 void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar, char commentchar)
 {
@@ -91,7 +91,7 @@ void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar
     FileCheckBinaryTerminal(file);
   }
 
-  // Read and print config
+  // Init device
   AppInit(device);
 
   uint16_t oldPage = -1;
@@ -123,8 +123,54 @@ void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar
     }
   }
 
+  // Cleanup
   AppCleanup();
+  FileClose(file);
+}
 
-  // Close File
+/***********************************************************************************************************************
+ * Write Clock Configuration into device
+ **********************************************************************************************************************/
+void ClockConfigWrite(char *filename, char *device, char dotchar, char commentchar)
+{
+  // Open file
+  FILE *file = FileOpen(filename, false);
+
+  // Check if we are writing binary data
+  if(dotchar == 0) {
+    FileCheckBinaryTerminal(file);
+  }
+
+  // Init device
+  AppInit(device);
+
+  // Loop all pages
+  uint16_t page;
+  for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
+    AppFlashConfigPageType config;
+
+    // Erase pages if necessary
+    if((page % APP_FLASH_PAGES_PER_SECTOR) == 0) {
+      AppEraseFlashConfigSector(page);
+    }
+
+    // Read config data page
+    if(dotchar == 0) {
+      FileRead(file, &(config.config.clockConfig), sizeof(config.config.clockConfig));
+    }
+    else {
+      uint8_t pagesec;
+      for(pagesec = 0; pagesec < APP_CLOCK_CONFIG_PER_PAGES; pagesec++) {
+        BitmapRead(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar, commentchar);
+      }
+    }
+
+    // Set page number and write page
+    config.pageNumber = page;
+    AppSetFlashConfig(&config);
+  }
+
+  // Cleanup
+  AppCleanup();
   FileClose(file);
 }
