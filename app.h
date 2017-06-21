@@ -110,7 +110,7 @@ void AppSetPreviewMode(void);
 #define APP_MATRIX_ROWS 12
 #define APP_MATRIX_COLS 17
 typedef uint8_t AppMatrixBitmapType[26];
-void AppSetPreviewMatrix(const AppMatrixBitmapType *matrix);
+void AppSetPreviewMatrix(const AppMatrixBitmapType matrix);
 
 typedef enum {
   AppMatrixDotClear,

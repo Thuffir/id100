@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Matrix Bitmap Functions
+ * Display Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,14 +31,12 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#ifndef BITMAP_H_
-#define BITMAP_H_
+#ifndef DISPLAY_H_
+#define DISPLAY_H_
 
-#include <stdio.h>
-#include <stdbool.h>
-#include "app.h"
+#include <stdint.h>
 
-void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar);
-bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar);
+void DisplaySetNormalMode(char *device);
+void DisplayShowContent(char *filename, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat);
 
-#endif // BITMAP_H_
+#endif // DISPLAY_H_

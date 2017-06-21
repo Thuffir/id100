@@ -161,7 +161,9 @@ void ClockConfigWrite(char *filename, char *device, char dotchar, char commentch
     else {
       uint8_t pagesec;
       for(pagesec = 0; pagesec < APP_CLOCK_CONFIG_PER_PAGES; pagesec++) {
-        BitmapRead(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar, commentchar);
+        if(BitmapRead(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar, commentchar) != false) {
+          ExitWithError("Invalid Input");
+        }
       }
     }
 

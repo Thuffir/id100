@@ -148,9 +148,9 @@ void AppActivateBootloader(void)
 /***********************************************************************************************************************
  * Set preview picture matrix
  **********************************************************************************************************************/
-void AppSetPreviewMatrix(const AppMatrixBitmapType *matrix)
+void AppSetPreviewMatrix(const AppMatrixBitmapType matrix)
 {
-  AppSendAndReceive('D', matrix, sizeof(*matrix), NULL, 0);
+  AppSendAndReceive('D', matrix, sizeof(AppMatrixBitmapType), NULL, 0);
 }
 
 /***********************************************************************************************************************

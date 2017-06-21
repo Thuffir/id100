@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Matrix Bitmap Functions
+ * Display Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,74 +31,64 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
+#include "display.h"
+#include "app.h"
+#include "file.h"
 #include "bitmap.h"
-#include "utils.h"
-
-#define BITMAP_SPACE_CHAR ' '
-#define BITMAP_MAX_LINE_LENGTH 256
 
 /***********************************************************************************************************************
- * Print a bitmap as ACII to stdout
+ * Set display to normal (clock) mode
  **********************************************************************************************************************/
-void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
+void DisplaySetNormalMode(char *device)
 {
-  int row, column;
-
-  // For each row,
-  for(row = 0; row < APP_MATRIX_ROWS; row++) {
-    char line[(APP_MATRIX_COLS * 2)];
-    // Format line
-    for(column = 0; column < APP_MATRIX_COLS; column++) {
-      line[column * 2] =
-          (AppGetMatrixBitmapDot(bitmap, row, column) == AppMatrixDotSet) ? dotchar : BITMAP_SPACE_CHAR;
-      line[(column * 2) + 1] = BITMAP_SPACE_CHAR;
-    }
-    // Remove trailing spaces
-    for(column = sizeof(line) - 1; column >= 0; column--) {
-      if(line[column] == BITMAP_SPACE_CHAR) {
-        line[column] = '\0';
-      }
-      else {
-        break;
-      }
-    }
-    // Print line
-    fprintf(file, "%s\n", line);
-  }
+  AppInit(device);
+  AppSetNormalMode();
+  AppCleanup();
 }
 
 /***********************************************************************************************************************
- * Read an ASCII picture from stdin and make a bitmap out of it
+ * Show user content
  **********************************************************************************************************************/
-bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar)
+void DisplayShowContent(char *filename, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat)
 {
-  uint8_t row, column;
+  // Open file
+  FILE *file = FileOpen(filename, false);
 
-  // Make bitmap empty
-  memset(bitmap, 0, sizeof(AppMatrixBitmapType));
-
-  // For each row,
-  for(row = 0; row < APP_MATRIX_ROWS; row++) {
-    char line[BITMAP_MAX_LINE_LENGTH];
-
-    // Read line, but ignore comments
-    do {
-      if(fgets(line, sizeof(line), file) == NULL) {
-        // Error
-        return true;
-      }
-    } while(line[0] == commentchar);
-
-    // Parse line
-    for(column = 0;
-        (column < sizeof(line)) && (line[column] != '\0') && (line[column] != '\n');
-        column++) {
-      if(((column % 2) == 0) && (line[column] == dotchar)) {
-        AppSetMatrixBitmapDot(bitmap, AppMatrixDotSet, row, column / 2);
-      }
-    }
+  // Check if we are writing binary data
+  if(dotchar == 0) {
+    FileCheckBinaryTerminal(file);
   }
 
-  return false;
+  // Make delay microseconds
+  delay *=1000;
+
+  // Init device
+  AppInit(device);
+
+  AppMatrixBitmapType bitmap;
+  bool once = true;
+  while(repeat--) {
+    // Read all frames
+    while((dotchar == 0) ?
+        (fread(bitmap, sizeof(bitmap), 1, file) == 1) :
+        (BitmapRead(file, bitmap, dotchar, commentchar) == false)) {
+      AppSetPreviewMatrix(bitmap);
+      // We set the preview mode after the first frame to avoid flicker
+      if(once) {
+        AppSetPreviewMode();
+        once = false;
+      }
+      usleep(delay);
+    }
+    rewind(file);
+  }
+
+  // Cleanup
+  AppCleanup();
+  FileClose(file);
 }
