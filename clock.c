@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "clock.h"
 #include "app.h"
 #include "file.h"
@@ -73,11 +74,18 @@ void ClockGet(char *filename, char *device)
  **********************************************************************************************************************/
 void ClockSet(char *device)
 {
-  // Get system time
-  time_t t = time(NULL);
-  struct tm *unixTime = localtime(&t);
+  time_t systime, oldtime;
 
-  // Convert it
+  AppInit(device);
+
+  // Synchronize to second border
+  oldtime = time(NULL);
+  while(oldtime == (systime = time(NULL))) {
+    usleep(1000);
+  }
+
+  // Convert system time to device time
+  struct tm *unixTime = localtime(&systime);
   AppDateTimeType dateTime;
   dateTime.year           = unixTime->tm_year - 100;
   dateTime.month          = unixTime->tm_mon + 1;
@@ -89,7 +97,7 @@ void ClockSet(char *device)
   dateTime.daylightSaving = unixTime->tm_isdst;
 
   // Set it
-  AppInit(device);
   AppSetDateTime(&dateTime);
+
   AppCleanup();
 }
