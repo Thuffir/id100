@@ -40,6 +40,7 @@
 #include "file.h"
 #include "clock_config.h"
 #include "display.h"
+#include "clock.h"
 
 /***********************************************************************************************************************
  * Main
@@ -70,13 +71,15 @@ int main(int numberOfArguments, char *arguments[])
     ReadClockConfig,
     WriteClockConfig,
     SetDisplay,
-    SetNormalMode
+    SetNormalMode,
+    ReadTime,
+    SetTime
   } whatToDo = DoNoting;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "bcCd:f:nr:st:w:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "bcCd:f:gGr:sSt:w:")) != -1) {
     switch(option) {
       case 'b' : {
         dotchar = 0;
@@ -118,13 +121,23 @@ int main(int numberOfArguments, char *arguments[])
       }
       break;
 
-      case 's' : {
+      case 'S' : {
         whatToDo = SetDisplay;
       }
       break;
 
-      case 'n' : {
+      case 's' : {
         whatToDo = SetNormalMode;
+      }
+      break;
+
+      case 'g' : {
+        whatToDo = ReadTime;
+      }
+      break;
+
+      case 'G' : {
+        whatToDo = SetTime;
       }
       break;
 
@@ -162,6 +175,16 @@ int main(int numberOfArguments, char *arguments[])
     }
     break;
 
+    case ReadTime: {
+      ClockGet(filename, device);
+    }
+    break;
+
+    case SetTime: {
+      ClockSet(device);
+    }
+    break;
+
     // Nothing to do
     default:
     case DoNoting: {
@@ -171,14 +194,16 @@ int main(int numberOfArguments, char *arguments[])
         "Usage:\n"
         " -d device               Use device instead of %s\n"
         " -f file                 Use filename for input / output\n"
-        " -b                      Use binary data\n"
         " -t hh:mm:ss[-hh:mm:ss]  Specify time or time range\n"
-        " -c                      Read clock configuration from device\n"
-        " -C                      Write clock configuration into device\n"
-        " -s                      Set display contents\n"
         " -w n                    wait n milliseconds between frames\n"
         " -r n                    repeat frames n times\n"
-        " -n                      Set normal (clock) mode\n"
+        " -b                      Use binary data\n"
+        " -c                      Read clock configuration from device\n"
+        " -C                      Write clock configuration into device\n"
+        " -s                      Set normal (clock) mode\n"
+        " -S                      Set display contents\n"
+        " -g                      Read current time from device\n"
+        " -G                      Write current system time to device\n"
         , defaultDevice
       );
     }

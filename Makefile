@@ -4,8 +4,8 @@ CFLAGS = -Ofast -flto -Wall -fomit-frame-pointer
 LIBS = 
 LFLAGS = -s
 
-INSTALLDIR = /opt/fhem
-INSTALL = sudo install -m 4755 -o root -g root
+INSTALLDIR = /usr/local/bin
+INSTALL = sudo install -o root -g root
 
 .PHONY: default all clean
 

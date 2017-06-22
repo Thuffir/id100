@@ -9,12 +9,47 @@ https://www.elv.de/id100-info-display-tischanzeige-bausatz.html
 Examples
 --------
 
-Read clock configuration from device:
+Read clock configuration from device and save it as binary file:
 
-    id100 -c > clock_config.bin
-    id100 -c -fclock_config.bin
+    id100 -c -b -f clock_config.bin
 
-Write clock configuration into device:
+Load clock configuration as binary file and write it into device:
 
-    id100 -C < clock_config.bin
-    id100 -C -fclock_config.bin
+    id100 -C -b -f clock_config.bin
+
+Display clock configuration from 12:00:00 to 12:00:10:
+
+    id100 -c -t 12:00:00-12:00:10
+
+Display picture from binary file:
+
+    id100 -S -b -f pic.bin
+
+Display picture from stdin:
+```
+id100 -S << EOF
+#   # # #       # # #   # # #
+#       #   #   #   #   #   #
+#   # # #       #   #   #   #
+#   #       #   #   #   #   #
+#   # # #       # # #   # # #
+
+
+                # # #   # # #
+                #   #   #   #
+                #   #   #   #
+                #   #   #   #
+                # # #   # # #
+EOF
+```
+Show clock again:
+
+    id100 -s
+
+Get current time from device:
+
+    id100 -g
+
+Write current system time to device:
+
+    id100 -G
