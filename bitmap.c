@@ -71,7 +71,7 @@ void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
 /***********************************************************************************************************************
  * Read an ASCII picture from stdin and make a bitmap out of it
  **********************************************************************************************************************/
-bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar)
+uint8_t BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar)
 {
   uint8_t row, column;
 
@@ -86,7 +86,7 @@ bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char comme
     do {
       if(fgets(line, sizeof(line), file) == NULL) {
         // Error
-        return true;
+        goto exit;
       }
     } while(line[0] == commentchar);
 
@@ -100,5 +100,6 @@ bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char comme
     }
   }
 
-  return false;
+  exit:
+  return row;
 }

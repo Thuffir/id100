@@ -40,6 +40,7 @@
 #include "app.h"
 #include "file.h"
 #include "bitmap.h"
+#include "utils.h"
 
 /***********************************************************************************************************************
  * Set display to normal (clock) mode
@@ -72,11 +73,26 @@ void DisplayShowContent(char *filename, char *device, char dotchar, char comment
 
   AppMatrixBitmapType bitmap;
   bool once = true;
+  uint8_t size;
   while(repeat--) {
     // Read all frames
-    while((dotchar == 0) ?
-        (fread(bitmap, sizeof(bitmap), 1, file) == 1) :
-        (BitmapRead(file, bitmap, dotchar, commentchar) == false)) {
+    for(;;) {
+      // Read next frame
+      size = (dotchar == 0) ?
+          fread(bitmap, 1, sizeof(bitmap), file) :
+          BitmapRead(file, bitmap, dotchar, commentchar);
+
+      // If no more frames
+      if(size == 0) {
+        break;
+      }
+
+      // Check if we have all data
+      if(size != ((dotchar == 0) ? sizeof(bitmap) : APP_MATRIX_ROWS)) {
+        ExitWithError("Invalid bitmap size: %u", size);
+      }
+
+      // Transmit frame
       AppSetPreviewMatrix(bitmap);
       // We set the preview mode after the first frame to avoid flicker
       if(once) {

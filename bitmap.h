@@ -35,10 +35,10 @@
 #define BITMAP_H_
 
 #include <stdio.h>
-#include <stdbool.h>
+#include <stdint.h>
 #include "app.h"
 
 void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar);
-bool BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar);
+uint8_t BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar);
 
 #endif // BITMAP_H_
