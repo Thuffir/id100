@@ -37,6 +37,6 @@
 #include <stdint.h>
 
 void DisplaySetNormalMode(char *device);
-void DisplayShowContent(char *filename, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat);
+void DisplayShowContent(char *filename, bool binary, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat);
 
 #endif // DISPLAY_H_

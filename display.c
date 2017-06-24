@@ -55,13 +55,13 @@ void DisplaySetNormalMode(char *device)
 /***********************************************************************************************************************
  * Show user content
  **********************************************************************************************************************/
-void DisplayShowContent(char *filename, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat)
+void DisplayShowContent(char *filename, bool binary, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat)
 {
   // Open file
   FILE *file = FileOpen(filename, false);
 
   // Check if we are writing binary data
-  if(dotchar == 0) {
+  if(binary) {
     FileCheckBinaryTerminal(file);
   }
 
@@ -78,7 +78,7 @@ void DisplayShowContent(char *filename, char *device, char dotchar, char comment
     // Read all frames
     for(;;) {
       // Read next frame
-      size = (dotchar == 0) ?
+      size = binary ?
           fread(bitmap, 1, sizeof(bitmap), file) :
           BitmapRead(file, bitmap, dotchar, commentchar);
 
@@ -88,7 +88,7 @@ void DisplayShowContent(char *filename, char *device, char dotchar, char comment
       }
 
       // Check if we have all data
-      if(size != ((dotchar == 0) ? sizeof(bitmap) : BITMAP_ROWS)) {
+      if(size != (binary ? sizeof(bitmap) : BITMAP_ROWS)) {
         ExitWithError("Invalid bitmap size: %u", size);
       }
 

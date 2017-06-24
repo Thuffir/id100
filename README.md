@@ -11,11 +11,11 @@ Examples
 
 Read clock configuration from device and save it as binary file:
 
-    id100 -c -b -f clock_config.bin
+    id100 -c -F clock_config.bin
 
 Load clock configuration as binary file and write it into device:
 
-    id100 -C -b -f clock_config.bin
+    id100 -C -F clock_config.bin
 
 Display clock configuration from 12:00:00 to 12:00:10:
 
@@ -23,7 +23,7 @@ Display clock configuration from 12:00:00 to 12:00:10:
 
 Display picture from binary file:
 
-    id100 -S -b -f pic.bin
+    id100 -S -F pic.bin
 
 Display picture from stdin:
 ```

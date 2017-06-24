@@ -41,6 +41,7 @@
 #include "clock_config.h"
 #include "display.h"
 #include "clock.h"
+#include "char.h"
 
 /***********************************************************************************************************************
  * Main
@@ -54,6 +55,8 @@ int main(int numberOfArguments, char *arguments[])
   char *device = (char *)defaultDevice;
   // File name for input / output
   char *filename = NULL;
+  // Is file binary?
+  bool binary = false;
   // Time stamp
   char *timestamp = "00:00:00-23:59:59";
   // Dot character for ASCII pictures
@@ -64,6 +67,8 @@ int main(int numberOfArguments, char *arguments[])
   uint32_t delay = 0;
   // Repeat frames so many times
   uint32_t repeat = 1;
+  // Overlay options
+  char *overlay=NULL;
 
   // This tells us what to do
   enum {
@@ -73,19 +78,15 @@ int main(int numberOfArguments, char *arguments[])
     SetDisplay,
     SetNormalMode,
     ReadTime,
-    SetTime
+    SetTime,
+    OverlayText
   } whatToDo = DoNoting;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "bcCd:f:gGr:sSt:w:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "cCd:f:F:gGo:r:sSt:w:")) != -1) {
     switch(option) {
-      case 'b' : {
-        dotchar = 0;
-      }
-      break;
-
       case 'd' : {
         device = optarg;
       }
@@ -93,6 +94,13 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'f' : {
         filename = optarg;
+        binary = false;
+      }
+      break;
+
+      case 'F' : {
+        filename = optarg;
+        binary = true;
       }
       break;
 
@@ -141,6 +149,12 @@ int main(int numberOfArguments, char *arguments[])
       }
       break;
 
+      case 'o': {
+        overlay = optarg;
+        whatToDo = OverlayText;
+      }
+      break;
+
       // Bad arguments
       case '?':
       default: {
@@ -156,17 +170,17 @@ int main(int numberOfArguments, char *arguments[])
   // Decide what to do
   switch(whatToDo) {
     case ReadClockConfig: {
-      ClockConfigRead(filename, device, timestamp, dotchar, commentchar);
+      ClockConfigRead(filename, binary, device, timestamp, dotchar, commentchar);
     }
     break;
 
     case WriteClockConfig: {
-      ClockConfigWrite(filename, device, dotchar, commentchar);
+      ClockConfigWrite(filename, binary, device, dotchar, commentchar);
     }
     break;
 
     case SetDisplay: {
-      DisplayShowContent(filename, device, dotchar, commentchar, delay, repeat);
+      DisplayShowContent(filename, binary, device, dotchar, commentchar, delay, repeat);
     }
     break;
 
@@ -185,6 +199,11 @@ int main(int numberOfArguments, char *arguments[])
     }
     break;
 
+    case OverlayText: {
+      CharOverlayText(filename, binary, device, overlay, dotchar, commentchar);
+    }
+    break;
+
     // Nothing to do
     default:
     case DoNoting: {
@@ -193,17 +212,18 @@ int main(int numberOfArguments, char *arguments[])
         "ID100 Utility ("__DATE__" "__TIME__")\n"
         "Usage:\n"
         " -d device               Use device instead of %s\n"
-        " -f file                 Use filename for input / output\n"
+        " -f file                 Use text file with filename for input / output\n"
+        " -F file                 Use binary file with filename for input / output\n"
         " -t hh:mm:ss[-hh:mm:ss]  Specify time or time range\n"
         " -w n                    wait n milliseconds between frames\n"
         " -r n                    repeat frames n times\n"
-        " -b                      Use binary data\n"
         " -c                      Read clock configuration from device\n"
         " -C                      Write clock configuration into device\n"
         " -s                      Set normal (clock) mode\n"
         " -S                      Set display contents\n"
         " -g                      Read current time from device\n"
         " -G                      Write current system time to device\n"
+        " -o                      Overlay text with a bitmap and show on device\n"
         , defaultDevice
       );
     }

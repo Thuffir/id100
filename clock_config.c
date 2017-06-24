@@ -76,7 +76,7 @@ static void ClockConfigParseTime(char *timestamp, uint32_t *fromAbsSec, uint32_t
 /***********************************************************************************************************************
  * Read Clock Configuration from device
  **********************************************************************************************************************/
-void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar, char commentchar)
+void ClockConfigRead(char *filename, bool binary, char *device, char *timestamp, char dotchar, char commentchar)
 {
   uint32_t secIdx, to;
 
@@ -87,7 +87,7 @@ void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar
   FILE *file = FileOpen(filename, true);
 
   // Check if we are writing binary data
-  if(dotchar == 0) {
+  if(binary) {
     FileCheckBinaryTerminal(file);
   }
 
@@ -107,7 +107,7 @@ void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar
     }
 
     // Check if we are writing binary data
-    if(dotchar == 0) {
+    if(binary) {
       FileWrite(file,
         config.config.clockConfig.matrixBitmap[pageSec], sizeof(config.config.clockConfig.matrixBitmap[pageSec]));
     }
@@ -131,13 +131,13 @@ void ClockConfigRead(char *filename, char *device, char *timestamp, char dotchar
 /***********************************************************************************************************************
  * Write Clock Configuration into device
  **********************************************************************************************************************/
-void ClockConfigWrite(char *filename, char *device, char dotchar, char commentchar)
+void ClockConfigWrite(char *filename, bool binary, char *device, char dotchar, char commentchar)
 {
   // Open file
   FILE *file = FileOpen(filename, false);
 
   // Check if we are writing binary data
-  if(dotchar == 0) {
+  if(binary) {
     FileCheckBinaryTerminal(file);
   }
 
@@ -155,7 +155,7 @@ void ClockConfigWrite(char *filename, char *device, char dotchar, char commentch
     }
 
     // Read config data page
-    if(dotchar == 0) {
+    if(binary) {
       FileRead(file, &(config.config.clockConfig), sizeof(config.config.clockConfig));
     }
     else {

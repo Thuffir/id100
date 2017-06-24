@@ -39,5 +39,6 @@
 
 void CharPutChar(AppMatrixBitmapType bitmap, uint8_t ascii, uint8_t row, uint8_t column);
 void CharPutText(AppMatrixBitmapType bitmap, char  *text, uint8_t row, uint8_t column);
+void CharOverlayText(char *filename, bool binary, char *device, char *overlay, char dotchar, char commentchar);
 
 #endif // CHAR_H_

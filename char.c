@@ -31,12 +31,18 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
+#include <string.h>
+#include "utils.h"
+#include "file.h"
 #include "char.h"
 #include "app.h"
 #include "bitmap.h"
 
-#define CHAR_WIDTH  3
-#define CHAR_HEIGTH 5
+#define CHAR_WIDTH    3
+#define CHAR_HEIGTH   5
+
+// MAx characters per line
+#define CHAR_PER_LINE (BITMAP_COLS / (CHAR_WIDTH + 1))
 
 /***********************************************************************************************************************
  * Put a character to a requested position
@@ -79,7 +85,48 @@ void CharPutChar(AppMatrixBitmapType bitmap, uint8_t ascii, uint8_t row, uint8_t
 void CharPutText(AppMatrixBitmapType bitmap, char *text, uint8_t row, uint8_t column)
 {
   uint8_t chrIdx, chr, col;
-  for(chrIdx = 0; (chr = text[chrIdx]) && ((col = ((chrIdx * 4) + column)) < BITMAP_COLS); chrIdx++ ) {
+  for(chrIdx = 0; (chr = text[chrIdx]) && ((col = ((chrIdx * CHAR_PER_LINE) + column)) < BITMAP_COLS); chrIdx++ ) {
     CharPutChar(bitmap, text[chrIdx], row, col);
   }
+}
+
+/***********************************************************************************************************************
+ * Overlay text(s) on a bitmap
+ **********************************************************************************************************************/
+void CharOverlayText(char *filename, bool binary, char *device, char *overlay, char dotchar, char commentchar)
+{
+  AppMatrixBitmapType bitmap;
+  // Open file
+  FILE *file = FileOpen(filename, false);
+
+  // Read bitmap
+  if(binary) {
+    FileCheckBinaryTerminal(file);
+    FileRead(file, bitmap, sizeof(bitmap));
+  }
+  else {
+    if(BitmapRead(file, bitmap, dotchar, commentchar) != BITMAP_ROWS) {
+      ExitWithError("Invalid bitmap");
+    }
+  }
+  FileClose(file);
+
+  char *opt;
+  // Parse options
+  for(opt = strtok(overlay, " "); opt; opt = strtok(NULL, " ")) {
+    unsigned int row, col;
+    char text[CHAR_PER_LINE + 1];
+    // Parse overlay options
+    if(sscanf(opt, "%u,%u,%4s", &row, &col, text) != 3) {
+      ExitWithError("Bad option: '%s'", opt);
+    }
+    // Format text into bitmap
+    CharPutText(bitmap, text, row, col);
+  }
+
+  // Show bitmap
+  AppInit(device);
+  AppSetPreviewMatrix(bitmap);
+  AppSetPreviewMode();
+  AppCleanup();
 }
