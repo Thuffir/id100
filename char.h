@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Matrix Bitmap Functions
+ * Character Generation Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,25 +31,13 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#ifndef BITMAP_H_
-#define BITMAP_H_
+#ifndef CHAR_H_
+#define CHAR_H_
 
-#include <stdio.h>
 #include <stdint.h>
 #include "app.h"
 
-#define BITMAP_ROWS 12
-#define BITMAP_COLS 17
+void CharPutChar(AppMatrixBitmapType bitmap, uint8_t ascii, uint8_t row, uint8_t column);
+void CharPutText(AppMatrixBitmapType bitmap, char  *text, uint8_t row, uint8_t column);
 
-typedef enum {
-  BitmapDotClear,
-  BitmapDotSet
-} BitmapDotType;
-
-BitmapDotType BitmapGetDot(AppMatrixBitmapType bitmap, uint8_t row, uint8_t column);
-void BitmapSetDot(AppMatrixBitmapType bitmap, BitmapDotType dot, uint8_t row, uint8_t column);
-
-void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar);
-uint8_t BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char commentchar);
-
-#endif // BITMAP_H_
+#endif // CHAR_H_

@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Display Functions
+ * Character Generation Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,80 +31,55 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
-#include "display.h"
+#include "char.h"
 #include "app.h"
-#include "file.h"
 #include "bitmap.h"
-#include "utils.h"
+
+#define CHAR_WIDTH  3
+#define CHAR_HEIGTH 5
 
 /***********************************************************************************************************************
- * Set display to normal (clock) mode
+ * Put a character to a requested position
  **********************************************************************************************************************/
-void DisplaySetNormalMode(char *device)
+void CharPutChar(AppMatrixBitmapType bitmap, uint8_t ascii, uint8_t row, uint8_t column)
 {
-  AppInit(device);
-  AppSetNormalMode();
-  AppCleanup();
+  // This holds the whole character set as bitmap, 16 bit per character
+  static const uint16_t charSet[] = {
+#include "charset.h"
+  };
+
+  // Limit ascii char
+  if((ascii < ' ') || (ascii > '~')) {
+    ascii = ' ';
+  }
+
+  // Character and bit mask
+  uint16_t chr = charSet[ascii - ' '], bitmask = 0x4000;
+  uint8_t r, c;
+
+  // For each row
+  for(r = 0; r < CHAR_HEIGTH; r++) {
+    // and each column
+    for(c = 0; c < CHAR_WIDTH; c++) {
+      uint8_t tr = r + row, tc = c + column;
+      // Set dot if also set in the character bitmap
+      if((chr & bitmask) && (tr < BITMAP_ROWS) && (tc < BITMAP_COLS)) {
+        BitmapSetDot(bitmap, BitmapDotSet, tr, tc);
+      }
+      // Shift bit mask to get next dot
+      bitmask >>= 1;
+    }
+  }
 }
 
+
 /***********************************************************************************************************************
- * Show user content
+ * Put text to a requested position
  **********************************************************************************************************************/
-void DisplayShowContent(char *filename, char *device, char dotchar, char commentchar, uint32_t delay, uint32_t repeat)
+void CharPutText(AppMatrixBitmapType bitmap, char *text, uint8_t row, uint8_t column)
 {
-  // Open file
-  FILE *file = FileOpen(filename, false);
-
-  // Check if we are writing binary data
-  if(dotchar == 0) {
-    FileCheckBinaryTerminal(file);
+  uint8_t chrIdx, chr, col;
+  for(chrIdx = 0; (chr = text[chrIdx]) && ((col = ((chrIdx * 4) + column)) < BITMAP_COLS); chrIdx++ ) {
+    CharPutChar(bitmap, text[chrIdx], row, col);
   }
-
-  // Make delay microseconds
-  delay *=1000;
-
-  // Init device
-  AppInit(device);
-
-  AppMatrixBitmapType bitmap;
-  bool once = true;
-  uint8_t size;
-  while(repeat--) {
-    // Read all frames
-    for(;;) {
-      // Read next frame
-      size = (dotchar == 0) ?
-          fread(bitmap, 1, sizeof(bitmap), file) :
-          BitmapRead(file, bitmap, dotchar, commentchar);
-
-      // If no more frames
-      if(size == 0) {
-        break;
-      }
-
-      // Check if we have all data
-      if(size != ((dotchar == 0) ? sizeof(bitmap) : BITMAP_ROWS)) {
-        ExitWithError("Invalid bitmap size: %u", size);
-      }
-
-      // Transmit frame
-      AppSetPreviewMatrix(bitmap);
-      // We set the preview mode after the first frame to avoid flicker
-      if(once) {
-        AppSetPreviewMode();
-        once = false;
-      }
-      usleep(delay);
-    }
-    rewind(file);
-  }
-
-  // Cleanup
-  AppCleanup();
-  FileClose(file);
 }

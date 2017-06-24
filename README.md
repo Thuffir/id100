@@ -28,18 +28,18 @@ Display picture from binary file:
 Display picture from stdin:
 ```
 id100 -S << EOF
-#   # # #       # # #   # # #
-#       #   #   #   #   #   #
-#   # # #       #   #   #   #
-#   #       #   #   #   #   #
-#   # # #       # # #   # # #
+        #       #       #
+      # #     # # #     # #
+          #     #     #
+            #   #   #
+        #     #   #     #
+      # # # #   #   # # # #
+        #     #   #     #
+            #   #   #
+          #     #     #
+      # #     # # #     # #
+        #       #       #
 
-
-                # # #   # # #
-                #   #   #   #
-                #   #   #   #
-                #   #   #   #
-                # # #   # # #
 EOF
 ```
 Show clock again:

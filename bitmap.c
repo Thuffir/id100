@@ -39,6 +39,35 @@
 #define BITMAP_MAX_LINE_LENGTH 256
 
 /***********************************************************************************************************************
+ * Get one dot from the bitmap matrix
+ **********************************************************************************************************************/
+BitmapDotType BitmapGetDot(AppMatrixBitmapType bitmap, uint8_t row, uint8_t column)
+{
+  // Calculate dot number
+  uint8_t dotnum = (column * BITMAP_ROWS) + row;
+
+  return((bitmap[dotnum / 8] & (0x80 >> (dotnum % 8))) ? BitmapDotSet : BitmapDotClear);
+}
+
+/***********************************************************************************************************************
+ * Set one dot in the bitmap matrix
+ **********************************************************************************************************************/
+void BitmapSetDot(AppMatrixBitmapType bitmap, BitmapDotType dot, uint8_t row, uint8_t column)
+{
+  // Calculate dot number
+  uint8_t dotnum = (column * BITMAP_ROWS) + row;
+
+  // Clear dot
+  if(dot == BitmapDotClear) {
+    bitmap[dotnum / 8] &= ~(0x80 >> (dotnum % 8));
+  }
+  // Set dot
+  else {
+    bitmap[dotnum / 8] |=  (0x80 >> (dotnum % 8));
+  }
+}
+
+/***********************************************************************************************************************
  * Print a bitmap as ACII to stdout
  **********************************************************************************************************************/
 void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
@@ -46,12 +75,12 @@ void BitmapPrint(FILE *file, AppMatrixBitmapType bitmap, char dotchar)
   int row, column;
 
   // For each row,
-  for(row = 0; row < APP_MATRIX_ROWS; row++) {
-    char line[(APP_MATRIX_COLS * 2)];
+  for(row = 0; row < BITMAP_ROWS; row++) {
+    char line[(BITMAP_COLS * 2)];
     // Format line
-    for(column = 0; column < APP_MATRIX_COLS; column++) {
+    for(column = 0; column < BITMAP_COLS; column++) {
       line[column * 2] =
-          (AppGetMatrixBitmapDot(bitmap, row, column) == AppMatrixDotSet) ? dotchar : BITMAP_SPACE_CHAR;
+          (BitmapGetDot(bitmap, row, column) == BitmapDotSet) ? dotchar : BITMAP_SPACE_CHAR;
       line[(column * 2) + 1] = BITMAP_SPACE_CHAR;
     }
     // Remove trailing spaces
@@ -79,7 +108,7 @@ uint8_t BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char co
   memset(bitmap, 0, sizeof(AppMatrixBitmapType));
 
   // For each row,
-  for(row = 0; row < APP_MATRIX_ROWS; row++) {
+  for(row = 0; row < BITMAP_ROWS; row++) {
     char line[BITMAP_MAX_LINE_LENGTH];
 
     // Read line, but ignore comments
@@ -95,7 +124,7 @@ uint8_t BitmapRead(FILE *file, AppMatrixBitmapType bitmap, char dotchar, char co
         (column < sizeof(line)) && (line[column] != '\0') && (line[column] != '\n');
         column++) {
       if(((column % 2) == 0) && (line[column] == dotchar)) {
-        AppSetMatrixBitmapDot(bitmap, AppMatrixDotSet, row, column / 2);
+        BitmapSetDot(bitmap, BitmapDotSet, row, column / 2);
       }
     }
   }

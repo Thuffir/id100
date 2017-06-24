@@ -107,17 +107,8 @@ void AppSetPreviewMode(void);
 /***********************************************************************************************************************
  * Display bitmap matrix
  **********************************************************************************************************************/
-#define APP_MATRIX_ROWS 12
-#define APP_MATRIX_COLS 17
 typedef uint8_t AppMatrixBitmapType[26];
 void AppSetPreviewMatrix(const AppMatrixBitmapType matrix);
-
-typedef enum {
-  AppMatrixDotClear,
-  AppMatrixDotSet
-} AppMatrixDotType;
-AppMatrixDotType AppGetMatrixBitmapDot(AppMatrixBitmapType bitmap, uint8_t row, uint8_t column);
-void AppSetMatrixBitmapDot(AppMatrixBitmapType bitmap, AppMatrixDotType dot, uint8_t row, uint8_t column);
 
 /***********************************************************************************************************************
  * Intensity
@@ -228,7 +219,7 @@ void AppEraseFlashConfigSector(uint16_t startPage);
  * Appointments
  **********************************************************************************************************************/
 typedef AppAppointmentType AppointmentsConfigType[20];
-void AppGetAppointments(AppointmentsConfigType *appointments);
-void AppSetAppointments(const AppointmentsConfigType *appointments);
+void AppGetAppointments(AppointmentsConfigType appointments);
+void AppSetAppointments(const AppointmentsConfigType appointments);
 
 #endif // APP_H_
