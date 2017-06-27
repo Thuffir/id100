@@ -42,6 +42,7 @@
 #include "display.h"
 #include "clock.h"
 #include "char.h"
+#include "misc.h"
 
 /***********************************************************************************************************************
  * Main
@@ -79,13 +80,14 @@ int main(int numberOfArguments, char *arguments[])
     SetNormalMode,
     ReadTime,
     SetTime,
-    OverlayText
+    OverlayText,
+    ShowFirmwareVersion
   } whatToDo = DoNoting;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "cCd:f:F:gGo:r:sSt:w:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "cCd:f:F:gGo:r:sSt:Vw:")) != -1) {
     switch(option) {
       case 'd' : {
         device = optarg;
@@ -116,6 +118,11 @@ int main(int numberOfArguments, char *arguments[])
 
       case 'w' : {
         delay = atoi(optarg);
+      }
+      break;
+
+      case 'V' : {
+        whatToDo = ShowFirmwareVersion;
       }
       break;
 
@@ -204,6 +211,11 @@ int main(int numberOfArguments, char *arguments[])
     }
     break;
 
+    case ShowFirmwareVersion: {
+      MiscPrintfFirmwareVersion(filename, device);
+    }
+    break;
+
     // Nothing to do
     default:
     case DoNoting: {
@@ -223,7 +235,8 @@ int main(int numberOfArguments, char *arguments[])
         " -S                      Set display contents\n"
         " -g                      Read current time from device\n"
         " -G                      Write current system time to device\n"
-        " -o                      Overlay text with a bitmap and show on device\n"
+        " -o row,col,txt [row,..] Overlay text with a bitmap and show on device\n"
+        " -V                      Show firmware version\n"
         , defaultDevice
       );
     }
