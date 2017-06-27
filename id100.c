@@ -87,10 +87,20 @@ int main(int numberOfArguments, char *arguments[])
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "cCd:f:F:gGo:r:sSt:Vw:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "cCd:D:f:F:gGm:o:r:sSt:Vw:")) != -1) {
     switch(option) {
       case 'd' : {
         device = optarg;
+      }
+      break;
+
+      case 'D' : {
+        dotchar = optarg[0];
+      }
+      break;
+
+      case 'm' : {
+        commentchar = optarg[0];
       }
       break;
 
@@ -227,8 +237,10 @@ int main(int numberOfArguments, char *arguments[])
         " -f file                 Use text file with filename for input / output\n"
         " -F file                 Use binary file with filename for input / output\n"
         " -t hh:mm:ss[-hh:mm:ss]  Specify time or time range\n"
-        " -w n                    wait n milliseconds between frames\n"
-        " -r n                    repeat frames n times\n"
+        " -w n                    Wait n milliseconds between frames\n"
+        " -r n                    Repeat frames n times\n"
+        " -D dorchar              Specify dot character to use in ASCII pictures\n"
+        " -m commentchar          Specify comment characters to use in ASCII pictures\n"
         " -c                      Read clock configuration from device\n"
         " -C                      Write clock configuration into device\n"
         " -s                      Set normal (clock) mode\n"
