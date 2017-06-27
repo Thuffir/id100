@@ -44,6 +44,11 @@
 #include "char.h"
 #include "misc.h"
 
+// Git hash
+#ifndef GIT_HASH
+#define GIT_HASH "-"
+#endif
+
 /***********************************************************************************************************************
  * Main
  **********************************************************************************************************************/
@@ -231,7 +236,7 @@ int main(int numberOfArguments, char *arguments[])
     case DoNoting: {
       // Print usage
       fprintf(stderr,
-        "ID100 Utility ("__DATE__" "__TIME__")\n"
+        "ID100 Utility ("__DATE__" "__TIME__", "GIT_HASH")\n"
         "Usage:\n"
         " -d device               Use device instead of %s\n"
         " -f file                 Use text file with filename for input / output\n"

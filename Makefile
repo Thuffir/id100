@@ -3,6 +3,7 @@ CC = gcc
 CFLAGS = -Ofast -flto -Wall -fomit-frame-pointer
 LIBS = 
 LFLAGS = -s
+DEFINES = -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
 
 INSTALLDIR = /usr/local/bin
 INSTALL = sudo install -o root -g root
@@ -18,7 +19,7 @@ OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
 -include $(OBJECTS:.o=.d)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -MMD -c $*.c -o $*.o
+	$(CC) $(DEFINES) $(CFLAGS) -MMD -c $*.c -o $*.o
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
