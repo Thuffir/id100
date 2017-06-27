@@ -14,10 +14,11 @@ all: default
 remake: clean $(TARGET)
 
 OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS = $(wildcard *.h)
 
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $< -o $@
+-include $(OBJECTS:.o=.d)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -MMD -c $*.c -o $*.o
 
 .PRECIOUS: $(TARGET) $(OBJECTS)
 
@@ -25,8 +26,7 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJECTS) -Wall $(LIBS) -o $@
 
 clean:
-	-rm -f *.o
-	-rm -f $(TARGET)
+	-rm -f $(TARGET) *.o *.d
 
 install: $(TARGET)
 	$(INSTALL) -s $(TARGET) $(INSTALLDIR)
