@@ -43,6 +43,7 @@
 #include "clock.h"
 #include "char.h"
 #include "misc.h"
+#include "intensity.h"
 
 // Git hash
 #ifndef GIT_HASH
@@ -74,7 +75,9 @@ int main(int numberOfArguments, char *arguments[])
   // Repeat frames so many times
   uint32_t repeat = 1;
   // Overlay options
-  char *overlay=NULL;
+  char *overlay = NULL;
+  // Intensity
+  char *intensity = NULL;
 
   // This tells us what to do
   enum {
@@ -86,13 +89,15 @@ int main(int numberOfArguments, char *arguments[])
     ReadTime,
     SetTime,
     OverlayText,
-    ShowFirmwareVersion
+    ShowFirmwareVersion,
+    ShowIntensity,
+    SetIntensity
   } whatToDo = DoNoting;
 
   int option;
   // Check for options
   opterr = 0;
-  while((option = getopt(numberOfArguments, arguments, "cCd:D:f:F:gGm:o:r:sSt:Vw:")) != -1) {
+  while((option = getopt(numberOfArguments, arguments, "cCd:D:f:F:gGiI:m:o:r:sSt:Vw:")) != -1) {
     switch(option) {
       case 'd' : {
         device = optarg;
@@ -171,6 +176,17 @@ int main(int numberOfArguments, char *arguments[])
       }
       break;
 
+      case 'i' : {
+        whatToDo = ShowIntensity;
+      }
+      break;
+
+      case 'I' : {
+        whatToDo = SetIntensity;
+        intensity = optarg;
+      }
+      break;
+
       case 'o': {
         overlay = optarg;
         whatToDo = OverlayText;
@@ -227,7 +243,17 @@ int main(int numberOfArguments, char *arguments[])
     break;
 
     case ShowFirmwareVersion: {
-      MiscPrintfFirmwareVersion(filename, device);
+      MiscPrintFirmwareVersion(filename, device);
+    }
+    break;
+
+    case ShowIntensity: {
+      IntensityPrint(filename, device);
+    }
+    break;
+
+    case SetIntensity: {
+      IntensitySet(device, intensity);
     }
     break;
 
@@ -254,6 +280,8 @@ int main(int numberOfArguments, char *arguments[])
         " -G                      Write current system time to device\n"
         " -o row,col,txt [row,..] Overlay text with a bitmap and show on device\n"
         " -V                      Show firmware version\n"
+        " -i                      Show intensity\n"
+        " -I intensity(0-9)       Set intensity\n"
         , defaultDevice
       );
     }

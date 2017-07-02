@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Misc Functions
+ * Intensity Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,9 +31,10 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#ifndef MISC_H_
-#define MISC_H_
+#ifndef INTENSITY_H_
+#define INTENSITY_H_
 
-void MiscPrintFirmwareVersion(char *filename, char *device);
+void IntensityPrint(char *filename, char *device);
+void IntensitySet(char *device, char *intensityParam);
 
-#endif // MISC_H_
+#endif // INTENSITY_H_

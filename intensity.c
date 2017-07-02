@@ -1,7 +1,7 @@
 /***********************************************************************************************************************
  *
  * ID100 Utility
- * Misc Functions
+ * Intensity Functions
  *
  * (C) 2017 Gergely Budai
  *
@@ -31,23 +31,68 @@
  * For more information, please refer to <http://unlicense.org/>
  *
  **********************************************************************************************************************/
-#include "misc.h"
+#include <stdlib.h>
+#include "intensity.h"
 #include "file.h"
 #include "app.h"
+#include "utils.h"
+
+// Intensity mapping
+static const AppIntensityType intensityMap[] = {
+  AppIntensity1,
+  AppIntensity2,
+  AppIntensity3,
+  AppIntensity4,
+  AppIntensity5,
+  AppIntensity6,
+  AppIntensity7,
+  AppIntensity8,
+  AppIntensity9,
+};
+static const uint8_t intensityNumberOf = sizeof(intensityMap) / sizeof(intensityMap[0]);
 
 /***********************************************************************************************************************
- * Print Firmware Version
+ * Print Intensity
  **********************************************************************************************************************/
-void MiscPrintFirmwareVersion(char *filename, char *device)
+void IntensityPrint(char *filename, char *device)
 {
-  // Get firmware version
+  // Get intensity
   AppInit(device);
-  AppVersionType fwVersion;
-  AppGetVersion(&fwVersion);
+  AppIntensityType intensity = AppGetIntensity();
   AppCleanup();
+
+  // Convert it to number
+  uint8_t idx;
+  for(idx = 0; idx < intensityNumberOf; idx++) {
+    if(intensityMap[idx] == intensity) {
+      break;
+    }
+  }
+
+  // Check it
+  if(idx >= intensityNumberOf) {
+    ExitWithError("Invalid intensity %u", intensity);
+  }
 
   // Print it
   FILE *file = FileOpen(filename, true);
-  fprintf(file, "%u.%u.%u\n", fwVersion.major, fwVersion.minor, fwVersion.revision);
+  fprintf(file, "%u\n", idx + 1);
   FileClose(file);
+}
+
+/***********************************************************************************************************************
+ * Set Intensity
+ **********************************************************************************************************************/
+void IntensitySet(char *device, char *intensityParam)
+{
+  // Convert and check intensity to int
+  uint8_t idx = atoi(intensityParam) - 1;
+  if(idx >= intensityNumberOf) {
+    ExitWithError("Invalid intensity: %s", intensityParam);
+  }
+
+  // Convert to intensity and set it
+  AppInit(device);
+  AppSetIntensity(intensityMap[idx]);
+  AppCleanup();
 }

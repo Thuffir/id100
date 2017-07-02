@@ -156,17 +156,19 @@ void AppSetPreviewMatrix(const AppMatrixBitmapType matrix)
 /***********************************************************************************************************************
  * Get the standard intensity
  **********************************************************************************************************************/
-void AppGetIntensity(AppIntensityType *intensity)
+AppIntensityType AppGetIntensity()
 {
-  AppSendAndReceive('b', NULL, 0, intensity, sizeof(*intensity));
+  AppIntensityType intensity;
+  AppSendAndReceive('b', NULL, 0, &intensity, sizeof(intensity));
+  return intensity;
 }
 
 /***********************************************************************************************************************
  * Set the standard intensity
  **********************************************************************************************************************/
-void AppSetIntensity(const AppIntensityType *intensity)
+void AppSetIntensity(const AppIntensityType intensity)
 {
-  AppSendAndReceive('B', intensity, sizeof(*intensity), NULL, 0);
+  AppSendAndReceive('B', &intensity, sizeof(intensity), NULL, 0);
 }
 
 /***********************************************************************************************************************

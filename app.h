@@ -125,8 +125,8 @@ typedef enum __packed {
   AppIntensity9 = 0xFF,
 } AppIntensityType;
 
-void AppGetIntensity(AppIntensityType *intensity);
-void AppSetIntensity(const AppIntensityType *intensity);
+AppIntensityType AppGetIntensity();
+void AppSetIntensity(const AppIntensityType intensity);
 
 /***********************************************************************************************************************
  * RTC Calibration
