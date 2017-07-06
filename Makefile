@@ -1,10 +1,11 @@
 TARGET = id100
 CC = gcc
 CFLAGS = -Ofast -flto -Wall -fomit-frame-pointer
-LIBS = 
+LIBS =
 LFLAGS = -s
 DEFINES = -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
 
+OBJDIR = obj
 INSTALLDIR = /usr/local/bin
 INSTALL = sudo install -o root -g root
 
@@ -14,20 +15,23 @@ default: $(TARGET)
 all: default
 remake: clean $(TARGET)
 
-OBJECTS = $(patsubst %.c, %.o, $(wildcard *.c))
+OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(wildcard *.c))
 
 -include $(OBJECTS:.o=.d)
 
-%.o: %.c
-	$(CC) $(DEFINES) $(CFLAGS) -MMD -c $*.c -o $*.o
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-.PRECIOUS: $(TARGET) $(OBJECTS)
+$(OBJDIR)/%.o: %.c
+	$(CC) $(DEFINES) $(CFLAGS) -MMD -c $< -o $@
 
-$(TARGET): $(OBJECTS)
+.PRECIOUS: $(TARGET) $(OBJECTS) $(OBJDIR)
+
+$(TARGET): $(OBJDIR) $(OBJECTS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJECTS) -Wall $(LIBS) -o $@
 
 clean:
-	-rm -f $(TARGET) *.o *.d
+	-rm -rf $(TARGET) $(OBJDIR)
 
 install: $(TARGET)
 	$(INSTALL) -s $(TARGET) $(INSTALLDIR)
