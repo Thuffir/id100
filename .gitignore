@@ -4,4 +4,4 @@ include
 *.o
 *.d
 id100
-
+obj

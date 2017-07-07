@@ -5,6 +5,7 @@ LIBS =
 LFLAGS = -s
 DEFINES = -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
 
+SRCDIR = src
 OBJDIR = obj
 INSTALLDIR = /usr/local/bin
 INSTALL = sudo install -o root -g root
@@ -15,20 +16,20 @@ default: $(TARGET)
 all: default
 remake: clean $(TARGET)
 
-OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(wildcard *.c))
+OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.c))
 
 -include $(OBJECTS:.o=.d)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(DEFINES) $(CFLAGS) -MMD -c $< -o $@
-
-.PRECIOUS: $(TARGET) $(OBJECTS) $(OBJDIR)
 
 $(TARGET): $(OBJDIR) $(OBJECTS)
 	$(CC) $(CFLAGS) $(LFLAGS) $(OBJECTS) -Wall $(LIBS) -o $@
+
+.PRECIOUS: $(TARGET) $(OBJECTS) $(OBJDIR)
 
 clean:
 	-rm -rf $(TARGET) $(OBJDIR)
