@@ -131,8 +131,8 @@ void AppSetIntensity(const AppIntensityType intensity);
 /***********************************************************************************************************************
  * RTC Calibration
  **********************************************************************************************************************/
-typedef uint8_t AppRtcCalibrationValueType[4];
-void AppSetRtcCalibration(const AppRtcCalibrationValueType *calibration);
+typedef float AppRtcCalibrationValueType;
+void AppSetRtcCalibration(AppRtcCalibrationValueType ppmDifference);
 
 typedef struct __packed {
   uint8_t day;

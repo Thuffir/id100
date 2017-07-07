@@ -46,6 +46,9 @@
 // Helper macro to get the length until the end of a specific member in a structure
 #define APP_GET_LENGTH_UNTIL(type, name) (offsetof(type, name) + sizeof(((type *)NULL)->name))
 
+// Limit PPM calibration value
+#define APP_PPM_LIMIT 189.0f
+
 /***********************************************************************************************************************
  * Send command and data to link layer and receive answer from it
  **********************************************************************************************************************/
@@ -182,9 +185,17 @@ void AppGetLastCalibration(AppLastCalibrationType *lastCalibration)
 /***********************************************************************************************************************
  * Set RTC Calibration value
  **********************************************************************************************************************/
-void AppSetRtcCalibration(const AppRtcCalibrationValueType *calibration)
+void AppSetRtcCalibration(AppRtcCalibrationValueType ppmDifference)
 {
-  AppSendAndReceive('C', calibration, sizeof(*calibration), NULL, 0);
+  // Limit the PPM value
+  if(ppmDifference > APP_PPM_LIMIT) {
+    ppmDifference = APP_PPM_LIMIT;
+  }
+  else if(ppmDifference < -APP_PPM_LIMIT) {
+    ppmDifference = -APP_PPM_LIMIT;
+  }
+
+  AppSendAndReceive('C', &ppmDifference, sizeof(ppmDifference), NULL, 0);
 }
 
 /***********************************************************************************************************************
