@@ -37,6 +37,7 @@
 #include "char.h"
 #include "app.h"
 #include "bitmap.h"
+#include "charset.h"
 
 #define CHAR_WIDTH    3
 #define CHAR_HEIGTH   5
@@ -49,18 +50,8 @@
  **********************************************************************************************************************/
 void CharPutChar(AppMatrixBitmapType bitmap, uint8_t ascii, uint8_t row, uint8_t column)
 {
-  // This holds the whole character set as bitmap, 16 bit per character
-  static const uint16_t charSet[] = {
-#include "charset.h"
-  };
-
-  // Limit ascii char
-  if((ascii < ' ') || (ascii > '~')) {
-    ascii = ' ';
-  }
-
   // Character and bit mask
-  uint16_t chr = charSet[ascii - ' '], bitmask = 0x4000;
+  uint16_t chr = CharSetGetChar(ascii), bitmask = 0x4000;
   uint8_t r, c;
 
   // For each row
