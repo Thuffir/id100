@@ -43,9 +43,6 @@
 #define APP_SWAP_ENDIAN_16(num)
 #endif
 
-// Helper macro to get the length until the end of a specific member in a structure
-#define APP_GET_LENGTH_UNTIL(type, name) (offsetof(type, name) + sizeof(((type *)NULL)->name))
-
 // Limit PPM calibration value
 #define APP_PPM_LIMIT 189.0f
 
@@ -249,17 +246,12 @@ void AppEraseFlashConfigSector(uint16_t startPage)
 /***********************************************************************************************************************
  * Set Flash configuration
  **********************************************************************************************************************/
-void AppSetFlashConfig(AppFlashConfigPageType *config)
+void AppSetFlashClockConfig(AppFlashClockConfigType *config)
 {
   uint16_t pageNumber;
 
-  // Check if we are writing clock configuration or appointment data based on page number
-  uint16_t size = (config->pageNumber < APP_CLOCK_CONFIG_FLASH_PAGES) ?
-    APP_GET_LENGTH_UNTIL(AppFlashConfigPageType, config.clockConfig) :
-    APP_GET_LENGTH_UNTIL(AppFlashConfigPageType, config.appointmentConfig);
-
   APP_SWAP_ENDIAN_16(config->pageNumber);
-  AppSendAndReceive('F', config, size, &pageNumber, sizeof(pageNumber));
+  AppSendAndReceive('F', config, sizeof(*config), &pageNumber, sizeof(pageNumber));
   APP_SWAP_ENDIAN_16(config->pageNumber);
   APP_SWAP_ENDIAN_16(pageNumber);
 

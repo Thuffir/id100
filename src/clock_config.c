@@ -109,7 +109,7 @@ void ClockConfigRead(char *filename, bool binary, char *device, char *timestamp,
     // Check if we are writing binary data
     if(binary) {
       FileWrite(file,
-        config.config.clockConfig.matrixBitmap[pageSec], sizeof(config.config.clockConfig.matrixBitmap[pageSec]));
+        config.matrixBitmap[pageSec], sizeof(config.matrixBitmap[pageSec]));
     }
     else {
       // Calculate time
@@ -119,7 +119,7 @@ void ClockConfigRead(char *filename, bool binary, char *device, char *timestamp,
       // Print header
       fprintf(file, "%c %02u:%02u:%02u %u,%u\n", commentchar, hour, minute, second, page, pageSec);
       // Print Config
-      BitmapPrint(file, config.config.clockConfig.matrixBitmap[pageSec], dotchar);
+      BitmapPrint(file, config.matrixBitmap[pageSec], dotchar);
     }
   }
 
@@ -147,7 +147,7 @@ void ClockConfigWrite(char *filename, bool binary, char *device, char dotchar, c
   // Loop all pages
   uint16_t page;
   for(page = 0; page < APP_CLOCK_CONFIG_FLASH_PAGES; page++) {
-    AppFlashConfigPageType config;
+    AppFlashClockConfigType config;
 
     // Erase pages if necessary
     if((page % APP_FLASH_PAGES_PER_SECTOR) == 0) {
@@ -156,12 +156,12 @@ void ClockConfigWrite(char *filename, bool binary, char *device, char dotchar, c
 
     // Read config data page
     if(binary) {
-      FileRead(file, &(config.config.clockConfig), sizeof(config.config.clockConfig));
+      FileRead(file, &(config.matrixBitmap), sizeof(config.matrixBitmap));
     }
     else {
       uint8_t pagesec;
       for(pagesec = 0; pagesec < APP_CLOCK_CONFIG_PER_PAGES; pagesec++) {
-        if(BitmapRead(file, config.config.clockConfig.matrixBitmap[pagesec], dotchar, commentchar) != false) {
+        if(BitmapRead(file, config.matrixBitmap[pagesec], dotchar, commentchar) != false) {
           ExitWithError("Invalid Input");
         }
       }
@@ -169,7 +169,7 @@ void ClockConfigWrite(char *filename, bool binary, char *device, char dotchar, c
 
     // Set page number and write page
     config.pageNumber = page;
-    AppSetFlashConfig(&config);
+    AppSetFlashClockConfig(&config);
   }
 
   // Cleanup

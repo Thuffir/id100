@@ -173,10 +173,35 @@ void AppSetStandby(const AppStandbyType *standby);
 // Number of clock configurations per flash pages
 #define APP_CLOCK_CONFIG_PER_PAGES 6
 
-// Appointments
+typedef AppMatrixBitmapType AppClockMatrixBitmap[APP_CLOCK_CONFIG_PER_PAGES];
+
+typedef struct __packed {
+  uint16_t pageNumber;
+  AppClockMatrixBitmap matrixBitmap;
+  uint8_t dummy[256 - sizeof(AppClockMatrixBitmap)];
+} AppFlashConfigPageType;
+
+void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config);
+
+typedef struct __packed {
+  uint16_t pageNumber;
+  AppClockMatrixBitmap matrixBitmap;
+} AppFlashClockConfigType;
+
+void AppSetFlashClockConfig(AppFlashClockConfigType *config);
+
+// Number of pages per sector (erase unit, 16 * 256 = 4k)
+#define APP_FLASH_PAGES_PER_SECTOR  16
+
+void AppEraseFlashConfigSector(uint16_t startPage);
+
+/***********************************************************************************************************************
+ * Appointments
+ **********************************************************************************************************************/
 #define APP_APPOINTMENT_MONTH_EVERY   0
 #define APP_APPOINTMENT_DAY_EVERY     0
 #define APP_APPOINTMENT_WEEKDAY_EVERY 7
+
 typedef struct __packed {
   AppActiveType active;
   AppActiveType overlay;
@@ -189,35 +214,6 @@ typedef struct __packed {
   uint8_t second;
 } AppAppointmentType;
 
-typedef union __packed {
-  // Clock configuration
-  struct __packed {
-    AppMatrixBitmapType matrixBitmap[APP_CLOCK_CONFIG_PER_PAGES];
-  } clockConfig;
-  // Appointment configuration
-  struct __packed {
-    AppMatrixBitmapType matrixBitmap;
-    AppAppointmentType appointment;
-  } appointmentConfig;
-} AppFlashConfigType;
-
-typedef struct __packed {
-  uint16_t pageNumber;
-  AppFlashConfigType config;
-  uint8_t dummy[256 - sizeof(AppFlashConfigType)];
-} AppFlashConfigPageType;
-
-void AppGetFlashConfigPage(uint16_t pageNumber, AppFlashConfigPageType *config);
-void AppSetFlashConfig(AppFlashConfigPageType *config);
-
-// Number of pages per sector (erase unit, 16 * 256 = 4k)
-#define APP_FLASH_PAGES_PER_SECTOR  16
-
-void AppEraseFlashConfigSector(uint16_t startPage);
-
-/***********************************************************************************************************************
- * Appointments
- **********************************************************************************************************************/
 typedef AppAppointmentType AppointmentsConfigType[20];
 void AppGetAppointments(AppointmentsConfigType appointments);
 void AppSetAppointments(const AppointmentsConfigType appointments);
