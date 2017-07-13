@@ -3,7 +3,11 @@ CC = gcc
 CFLAGS = -Ofast -flto -Wall -fomit-frame-pointer
 LIBS =
 LFLAGS = -s
+
+GIT_STATUS = $(shell git status --porcelain)
+ifeq ($(strip $(GIT_STATUS)),)
 DEFINES = -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
+endif
 
 SRCDIR = src
 OBJDIR = obj

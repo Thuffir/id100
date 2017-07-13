@@ -46,8 +46,10 @@
 #include "intensity.h"
 
 // Git hash
-#ifndef GIT_HASH
-#define GIT_HASH "-"
+#ifdef GIT_HASH
+#define GIT_STRING ", "GIT_HASH
+#else
+#define GIT_STRING ""
 #endif
 
 /***********************************************************************************************************************
@@ -262,7 +264,7 @@ int main(int numberOfArguments, char *arguments[])
     case DoNoting: {
       // Print usage
       fprintf(stderr,
-        "ID100 Utility ("__DATE__" "__TIME__", "GIT_HASH")\n"
+        "ID100 Utility ("__DATE__" "__TIME__""GIT_STRING")\n"
         "Usage:\n"
         " -d device               Use device instead of %s\n"
         " -f file                 Use text file with filename for input / output\n"
