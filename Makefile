@@ -1,18 +1,19 @@
-TARGET = id100
-CC = gcc
-CFLAGS = -Ofast -flto -Wall -fomit-frame-pointer
-LIBS =
-LFLAGS = -s
+TARGET := id100
+CC := gcc
+CFLAGS := -Ofast -flto=jobserver -Wall -fomit-frame-pointer
+LFLAGS := -s
 
-GIT_STATUS = $(shell git status --porcelain)
+GIT_STATUS := $(shell git status --porcelain)
 ifeq ($(strip $(GIT_STATUS)),)
-DEFINES = -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
+DEFINES := -D GIT_HASH=\"$(shell git rev-parse --short=4 HEAD)\"
 endif
 
-SRCDIR = src
-OBJDIR = obj
-INSTALLDIR = /usr/local/bin
-INSTALL = sudo install -o root -g root
+SRCDIR := src
+OBJDIR := obj
+INSTALLDIR := /usr/local/bin
+INSTALL := sudo install -o root -g root
+RM := rm -rf
+MKDIR := mkdir -p
 
 .PHONY: default all clean remake install
 
@@ -20,23 +21,19 @@ default: $(TARGET)
 all: default
 remake: clean $(TARGET)
 
-OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.c))
+OBJECTS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(wildcard $(SRCDIR)/*.c))
 
 -include $(OBJECTS:.o=.d)
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(DEFINES) $(CFLAGS) -MMD -c $< -o $@
+	@$(MKDIR) -p $(@D)
+	+$(CC) $(DEFINES) $(CFLAGS) -MMD -c $< -o $@
 
-$(TARGET): $(OBJDIR) $(OBJECTS)
-	$(CC) $(CFLAGS) $(LFLAGS) $(OBJECTS) -Wall $(LIBS) -o $@
-
-.PRECIOUS: $(TARGET) $(OBJECTS) $(OBJDIR)
+$(TARGET): $(OBJECTS)
+	+$(CC) $(CFLAGS) $(LFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 clean:
-	-rm -rf $(TARGET) $(OBJDIR)
+	$(RM) $(TARGET) $(OBJDIR)
 
 install: $(TARGET)
 	$(INSTALL) -s $(TARGET) $(INSTALLDIR)
